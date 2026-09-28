@@ -1,137 +1,106 @@
-<!DOCTYPE html>
+const express = require("express");
+const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
 
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GEM Access | Conexões</title>
-  <link rel="stylesheet" href="css/style.css">
-</head>
+const app = express();
+const PORT = 3000;
 
-<body>
-  <div class="app">
-    <aside class="sidebar">
-      <a class="brand" href="dashboard.html">
-        <img class="brand-logo" src="assets/logo.png" alt="Logo GEM Access">
-        <div>
-          <strong>GEM Access</strong>
-          <span>VPN Monitoring</span>
-        </div>
-      </a>
+const DB_PATH = path.join(__dirname, "..", "data", "db.json");
 
-```
-  <nav>
-    <a href="dashboard.html">Dashboard</a>
-    <a class="active" href="connections.html">Conexões</a>
-    <a href="users.html">Usuários</a>
-    <a href="alerts.html">Alertas <span class="badge">3</span></a>
-    <a href="reports.html">Relatórios</a>
-  </nav>
+app.use(cors());
+app.use(express.json());
 
-  <div class="sidebar-bottom">
-    <a href="#">Configurações</a>
-    <a href="index.html">Sair</a>
-  </div>
-</aside>
+function lerBanco() {
+  const dados = fs.readFileSync(DB_PATH, "utf8");
+  return JSON.parse(dados);
+}
 
-<main class="content">
-  <header class="topbar">
-    <div>
-      <p class="eyebrow">MONITORAMENTO</p>
-      <h1>Conexões VPN</h1>
-      <p class="subtitle">Sessões ativas e recentes da infraestrutura.</p>
-    </div>
-    <div class="user-chip">
-      <span class="status-dot"></span> Administrador
-    </div>
-  </header>
+function salvarBanco(dados) {
+  fs.writeFileSync(DB_PATH, JSON.stringify(dados, null, 2));
+}
 
-  <section class="panel">
-    <div class="toolbar">
-      <input class="search" type="text" placeholder="Pesquisar usuário ou IP...">
-      <select>
-        <option>Todos os status</option>
-        <option>Ativo</option>
-        <option>Alerta</option>
-      </select>
-    </div>
+app.get("/api/connections", (req, res) => {
+  const dados = lerBanco();
+  res.json(dados.connections);
+});
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Usuário</th>
-            <th>IP de origem</th>
-            <th>IP VPN</th>
-            <th>Protocolo</th>
-            <th>Duração</th>
-            <th>Tráfego</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="connections-table">
-          <tr>
-            <td colspan="7">Carregando conexões...</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-</main>
-```
+app.get("/api/connections/:id", (req, res) => {
+  const dados = lerBanco();
 
-  </div>
+  const conexao = dados.connections.find(
+    item => item.id === Number(req.params.id)
+  );
 
-  <script>
-    async function carregarConexoes() {
-      const tabela = document.getElementById("connections-table");
+  if (!conexao) {
+    return res.status(404).json({
+      error: "Conexão não encontrada"
+    });
+  }
 
-      try {
-        const resposta = await fetch("http://localhost:3000/api/connections");
+  res.json(conexao);
+});
 
-        if (!resposta.ok) {
-          throw new Error("Não foi possível carregar as conexões.");
-        }
+app.post("/api/connections", (req, res) => {
+  const dados = lerBanco();
 
-        const dados = await resposta.json();
-        tabela.innerHTML = "";
+  const novaConexao = {
+    id: dados.connections.length
+      ? Math.max(...dados.connections.map(item => item.id)) + 1
+      : 1,
+    ...req.body
+  };
 
-        dados.forEach(conexao => {
-          const linha = document.createElement("tr");
+  dados.connections.push(novaConexao);
+  salvarBanco(dados);
 
-          const statusClasse =
-            conexao.status === "active" ? "success" : "warning";
+  res.status(201).json(novaConexao);
+});
 
-          const statusTexto =
-            conexao.status === "active" ? "Ativo" : "Alerta";
+app.put("/api/connections/:id", (req, res) => {
+  const dados = lerBanco();
 
-          linha.innerHTML = `
-            <td>${conexao.user}</td>
-            <td>${conexao.sourceIp}</td>
-            <td>${conexao.vpnIp}</td>
-            <td>${conexao.protocol}</td>
-            <td>--</td>
-            <td>${conexao.traffic}</td>
-            <td>
-              <span class="tag ${statusClasse}">${statusTexto}</span>
-            </td>
-          `;
+  const index = dados.connections.findIndex(
+    item => item.id === Number(req.params.id)
+  );
 
-          tabela.appendChild(linha);
-        });
-      } catch (erro) {
-        console.error(erro);
+  if (index === -1) {
+    return res.status(404).json({
+      error: "Conexão não encontrada"
+    });
+  }
 
-        tabela.innerHTML = `
-          <tr>
-            <td colspan="7">Erro ao carregar as conexões.</td>
-          </tr>
-        `;
-      }
-    }
+  dados.connections[index] = {
+    ...dados.connections[index],
+    ...req.body,
+    id: Number(req.params.id)
+  };
 
-    carregarConexoes();
-  </script>
+  salvarBanco(dados);
 
-</body>
-</html>
+  res.json(dados.connections[index]);
+});
+
+app.delete("/api/connections/:id", (req, res) => {
+  const dados = lerBanco();
+
+  const index = dados.connections.findIndex(
+    item => item.id === Number(req.params.id)
+  );
+
+  if (index === -1) {
+    return res.status(404).json({
+      error: "Conexão não encontrada"
+    });
+  }
+
+  const removida = dados.connections.splice(index, 1)[0];
+
+  salvarBanco(dados);
+
+  res.json(removida);
+});
+
+app.listen(PORT, () => {
+  console.log(`GEM Access API rodando em http://localhost:${PORT}`);
+});
