@@ -1,0 +1,22 @@
+{
+  "connections": [
+    {
+      "id": 1,
+      "user": "Guilherme",
+      "vpnIp": "10.8.0.2",
+      "sourceIp": "192.168.56.10",
+      "protocol": "OpenVPN",
+      "status": "active",
+      "traffic": "125 MB"
+    },
+    {
+      "id": 2,
+      "user": "Everton",
+      "vpnIp": "10.8.0.3",
+      "sourceIp": "192.168.56.11",
+      "protocol": "WireGuard",
+      "status": "active",
+      "traffic": "230 MB"
+    }
+  ]
+}
