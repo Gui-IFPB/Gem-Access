@@ -6,6 +6,7 @@
       "vpnIp": "10.8.0.2",
       "sourceIp": "192.168.56.10",
       "protocol": "OpenVPN",
+      "duration": "02:34:12",
       "status": "active",
       "traffic": "125 MB"
     },
@@ -15,6 +16,7 @@
       "vpnIp": "10.8.0.3",
       "sourceIp": "192.168.56.11",
       "protocol": "WireGuard",
+      "duration": "01:48:27",
       "status": "active",
       "traffic": "230 MB"
     }
