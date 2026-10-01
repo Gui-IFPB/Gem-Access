@@ -1,122 +1,430 @@
-<script>
-  const API_URL = "http://localhost:3000/connections";
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  const tabela = document.getElementById("connections-table");
-  const campoPesquisa = document.querySelector(".search");
-  const filtroStatus = document.querySelector("select");
+  <title>GEM Access | Conexões</title>
 
-  let conexoes = [];
+  <link rel="stylesheet" href="css/style.css">
+</head>
 
-  async function carregarConexoes() {
-    try {
-      tabela.innerHTML = `
-        <tr>
-          <td colspan="7">Carregando conexões...</td>
-        </tr>
-      `;
+<body>
 
-      const resposta = await fetch(API_URL);
+  <div class="app">
 
-      if (!resposta.ok) {
-        throw new Error("Erro ao acessar o JSON Server.");
+    <aside class="sidebar">
+
+      <a class="brand" href="dashboard.html">
+        <img
+          class="brand-logo"
+          src="assets/logo.png"
+          alt="Logo GEM Access"
+        >
+
+        <div>
+          <strong>GEM Access</strong>
+          <span>VPN Monitoring</span>
+        </div>
+      </a>
+
+      <nav>
+        <a href="dashboard.html">
+          Dashboard
+        </a>
+
+        <a class="active" href="connections.html">
+          Conexões
+        </a>
+
+        <a href="users.html">
+          Usuários
+        </a>
+
+        <a href="alerts.html">
+          Alertas
+          <span class="badge" id="alerts-badge">0</span>
+        </a>
+
+        <a href="reports.html">
+          Relatórios
+        </a>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <a href="#">
+          Configurações
+        </a>
+
+        <a href="index.html">
+          Sair
+        </a>
+      </div>
+
+    </aside>
+
+
+    <main class="content">
+
+      <header class="topbar">
+
+        <div>
+
+          <p class="eyebrow">
+            MONITORAMENTO
+          </p>
+
+          <h1>
+            Conexões VPN
+          </h1>
+
+          <p class="subtitle">
+            Sessões ativas e recentes da infraestrutura.
+          </p>
+
+        </div>
+
+        <div class="user-chip">
+          <span class="status-dot"></span>
+          Administrador
+        </div>
+
+      </header>
+
+
+      <section class="panel">
+
+        <div class="toolbar">
+
+          <input
+            id="search-input"
+            class="search"
+            type="text"
+            placeholder="Pesquisar usuário ou IP..."
+          >
+
+          <select id="status-filter">
+
+            <option value="all">
+              Todos os status
+            </option>
+
+            <option value="active">
+              Ativo
+            </option>
+
+            <option value="alert">
+              Alerta
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="table-wrap">
+
+          <table>
+
+            <thead>
+
+              <tr>
+                <th>Usuário</th>
+                <th>IP de origem</th>
+                <th>IP VPN</th>
+                <th>Protocolo</th>
+                <th>Duração</th>
+                <th>Tráfego</th>
+                <th>Status</th>
+              </tr>
+
+            </thead>
+
+            <tbody id="connections-table">
+
+              <tr>
+                <td colspan="7">
+                  Carregando conexões...
+                </td>
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+
+  <script>
+
+    /*
+     * Endereço do JSON Server.
+     *
+     * Cada integrante que executar o projeto
+     * localmente deverá iniciar o JSON Server
+     * na porta 3000.
+     */
+    const API_URL = "http://localhost:3000/connections";
+
+
+    const tabela =
+      document.getElementById("connections-table");
+
+    const campoPesquisa =
+      document.getElementById("search-input");
+
+    const filtroStatus =
+      document.getElementById("status-filter");
+
+
+    let conexoes = [];
+
+
+    /*
+     * Busca as conexões no JSON Server.
+     */
+    async function carregarConexoes() {
+
+      try {
+
+        tabela.innerHTML = `
+          <tr>
+            <td colspan="7">
+              Carregando conexões...
+            </td>
+          </tr>
+        `;
+
+
+        const resposta = await fetch(API_URL);
+
+
+        if (!resposta.ok) {
+          throw new Error(
+            "Não foi possível acessar o JSON Server."
+          );
+        }
+
+
+        conexoes = await resposta.json();
+
+
+        renderizarConexoes();
+
+
+      } catch (erro) {
+
+        console.error(
+          "Erro ao carregar conexões:",
+          erro
+        );
+
+
+        tabela.innerHTML = `
+          <tr>
+            <td colspan="7">
+              Não foi possível carregar os dados.
+              <br>
+              Verifique se o JSON Server está rodando.
+            </td>
+          </tr>
+        `;
+
       }
 
-      conexoes = await resposta.json();
-
-      renderizarConexoes();
-
-    } catch (erro) {
-      console.error("Erro:", erro);
-
-      tabela.innerHTML = `
-        <tr>
-          <td colspan="7">
-            Não foi possível carregar as conexões.
-            Verifique se o JSON Server está rodando.
-          </td>
-        </tr>
-      `;
     }
-  }
 
-  function renderizarConexoes() {
-    const pesquisa = campoPesquisa.value.toLowerCase().trim();
-    const statusSelecionado = filtroStatus.value;
 
-    const conexoesFiltradas = conexoes.filter(conexao => {
+    /*
+     * Monta a tabela usando os dados
+     * recebidos do JSON Server.
+     */
+    function renderizarConexoes() {
 
-      const correspondePesquisa =
-        conexao.user.toLowerCase().includes(pesquisa) ||
-        conexao.sourceIp.toLowerCase().includes(pesquisa) ||
-        conexao.vpnIp.toLowerCase().includes(pesquisa);
+      const pesquisa =
+        campoPesquisa.value
+          .toLowerCase()
+          .trim();
 
-      let correspondeStatus = true;
 
-      if (statusSelecionado === "Ativo") {
-        correspondeStatus = conexao.status === "active";
+      const statusSelecionado =
+        filtroStatus.value;
+
+
+      const conexoesFiltradas =
+        conexoes.filter(conexao => {
+
+
+          const usuario =
+            String(conexao.user || "")
+              .toLowerCase();
+
+
+          const ipOrigem =
+            String(conexao.sourceIp || "")
+              .toLowerCase();
+
+
+          const ipVpn =
+            String(conexao.vpnIp || "")
+              .toLowerCase();
+
+
+          const correspondePesquisa =
+            usuario.includes(pesquisa) ||
+            ipOrigem.includes(pesquisa) ||
+            ipVpn.includes(pesquisa);
+
+
+          const correspondeStatus =
+            statusSelecionado === "all" ||
+            conexao.status === statusSelecionado;
+
+
+          return (
+            correspondePesquisa &&
+            correspondeStatus
+          );
+
+        });
+
+
+      /*
+       * Nenhum resultado encontrado.
+       */
+      if (conexoesFiltradas.length === 0) {
+
+        tabela.innerHTML = `
+          <tr>
+            <td colspan="7">
+              Nenhuma conexão encontrada.
+            </td>
+          </tr>
+        `;
+
+        return;
+
       }
 
-      if (statusSelecionado === "Alerta") {
-        correspondeStatus = conexao.status === "alert";
-      }
 
-      return correspondePesquisa && correspondeStatus;
-    });
+      tabela.innerHTML = "";
 
-    if (conexoesFiltradas.length === 0) {
-      tabela.innerHTML = `
-        <tr>
-          <td colspan="7">
-            Nenhuma conexão encontrada.
+
+      /*
+       * Cria cada linha da tabela.
+       */
+      conexoesFiltradas.forEach(conexao => {
+
+
+        let statusClasse = "neutral";
+
+        let statusTexto = "Offline";
+
+
+        if (conexao.status === "active") {
+
+          statusClasse = "success";
+
+          statusTexto = "Ativo";
+
+        }
+
+
+        if (conexao.status === "alert") {
+
+          statusClasse = "warning";
+
+          statusTexto = "Alerta";
+
+        }
+
+
+        const linha =
+          document.createElement("tr");
+
+
+        linha.innerHTML = `
+
+          <td>
+            ${conexao.user || "--"}
           </td>
-        </tr>
-      `;
 
-      return;
+          <td>
+            ${conexao.sourceIp || "--"}
+          </td>
+
+          <td>
+            ${conexao.vpnIp || "--"}
+          </td>
+
+          <td>
+            ${conexao.protocol || "--"}
+          </td>
+
+          <td>
+            ${conexao.duration || "--"}
+          </td>
+
+          <td>
+            ${conexao.traffic || "--"}
+          </td>
+
+          <td>
+            <span class="tag ${statusClasse}">
+              ${statusTexto}
+            </span>
+          </td>
+
+        `;
+
+
+        tabela.appendChild(linha);
+
+      });
+
     }
 
-    tabela.innerHTML = "";
 
-    conexoesFiltradas.forEach(conexao => {
+    /*
+     * Pesquisa em tempo real.
+     */
+    campoPesquisa.addEventListener(
+      "input",
+      renderizarConexoes
+    );
 
-      const linha = document.createElement("tr");
 
-      let statusClasse = "neutral";
-      let statusTexto = "Offline";
+    /*
+     * Filtro por status.
+     */
+    filtroStatus.addEventListener(
+      "change",
+      renderizarConexoes
+    );
 
-      if (conexao.status === "active") {
-        statusClasse = "success";
-        statusTexto = "Ativo";
-      }
 
-      if (conexao.status === "alert") {
-        statusClasse = "warning";
-        statusTexto = "Alerta";
-      }
+    /*
+     * Primeira carga.
+     */
+    carregarConexoes();
 
-      linha.innerHTML = `
-        <td>${conexao.user}</td>
-        <td>${conexao.sourceIp}</td>
-        <td>${conexao.vpnIp}</td>
-        <td>${conexao.protocol}</td>
-        <td>${conexao.duration || "--"}</td>
-        <td>${conexao.traffic}</td>
-        <td>
-          <span class="tag ${statusClasse}">
-            ${statusTexto}
-          </span>
-        </td>
-      `;
 
-      tabela.appendChild(linha);
-    });
-  }
+    /*
+     * Atualiza os dados automaticamente
+     * a cada 10 segundos.
+     */
+    setInterval(
+      carregarConexoes,
+      10000
+    );
 
-  campoPesquisa.addEventListener("input", renderizarConexoes);
-  filtroStatus.addEventListener("change", renderizarConexoes);
+  </script>
 
-  carregarConexoes();
-
-  // Atualiza os dados automaticamente a cada 10 segundos
-  setInterval(carregarConexoes, 10000);
-</script>
+</body>
+</html>
