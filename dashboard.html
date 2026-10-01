@@ -6,7 +6,7 @@
   <title>GEM Access | Dashboard</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body data-page="dashboard">
   <div class="app">
     <aside class="sidebar">
       <a class="brand" href="dashboard.html">
@@ -17,7 +17,7 @@
         <a class="active" href="dashboard.html">Dashboard</a>
         <a href="connections.html">Conexões</a>
         <a href="users.html">Usuários</a>
-        <a href="alerts.html">Alertas <span class="badge">3</span></a>
+        <a href="alerts.html">Alertas <span class="badge" id="alerts-badge">0</span></a>
         <a href="reports.html">Relatórios</a>
       </nav>
       <div class="sidebar-bottom">
@@ -36,45 +36,38 @@
       </header>
 
       <section class="stats-grid">
-        <article class="stat-card"><span>Conexões ativas</span><strong>18</strong><small>+12% hoje</small></article>
-        <article class="stat-card"><span>Usuários conectados</span><strong>23</strong><small>5 novos hoje</small></article>
-        <article class="stat-card"><span>Tráfego total</span><strong>1,8 TB</strong><small>Últimas 24 horas</small></article>
-        <article class="stat-card warning"><span>Alertas ativos</span><strong>3</strong><small>1 requer atenção</small></article>
+        <article class="stat-card"><span>Conexões ativas</span><strong id="active-connections">--</strong><small>Sessões em andamento</small></article>
+        <article class="stat-card"><span>Usuários conectados</span><strong id="connected-users">--</strong><small>Usuários únicos ativos</small></article>
+        <article class="stat-card"><span>Tráfego total</span><strong id="total-traffic">--</strong><small>Conexões cadastradas</small></article>
+        <article class="stat-card warning"><span>Alertas ativos</span><strong id="active-alerts">--</strong><small>Requerem atenção</small></article>
       </section>
 
       <section class="two-columns">
         <article class="panel">
-          <div class="panel-header"><div><h2>Conexões nas últimas 24h</h2><p>Quantidade estimada de sessões VPN.</p></div><span class="pill">Atualização: 10:00</span></div>
-          <div class="fake-chart">
-            <div class="chart-line"></div>
-            <div class="chart-labels"><span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>24h</span></div>
-          </div>
+          <div class="panel-header"><div><h2>Conexões por protocolo</h2><p>Distribuição das sessões cadastradas.</p></div></div>
+          <div class="bar-chart" id="dashboard-chart"></div>
+          <div class="chart-labels" id="dashboard-chart-labels"></div>
         </article>
 
         <article class="panel">
-          <div class="panel-header"><div><h2>Status da rede</h2><p>Resumo fictício da infraestrutura.</p></div></div>
-          <div class="status-list">
-            <div><span><i class="status-dot"></i> Servidor VPN</span><strong>Online</strong></div>
-            <div><span><i class="status-dot"></i> Gateway principal</span><strong>Online</strong></div>
-            <div><span><i class="status-dot orange"></i> Gateway secundário</span><strong>Atenção</strong></div>
-          </div>
+          <div class="panel-header"><div><h2>Status da rede</h2><p>Estado dos componentes cadastrados.</p></div></div>
+          <div class="status-list" id="network-status"><p>Carregando status...</p></div>
         </article>
       </section>
 
       <section class="panel">
-        <div class="panel-header"><div><h2>Conexões recentes</h2><p>Dados fictícios para demonstração da interface.</p></div><a class="text-link" href="connections.html">Ver todas</a></div>
+        <div class="panel-header"><div><h2>Conexões recentes</h2><p>Sessões cadastradas no sistema.</p></div><a class="text-link" href="connections.html">Ver todas</a></div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Usuário</th><th>IP VPN</th><th>Protocolo</th><th>Duração</th><th>Tráfego</th><th>Status</th></tr></thead>
-            <tbody>
-              <tr><td>João Silva</td><td>10.0.0.15</td><td>OpenVPN</td><td>02:34:12</td><td>2,4 GB</td><td><span class="tag success">Ativo</span></td></tr>
-              <tr><td>Maria Souza</td><td>10.0.0.23</td><td>WireGuard</td><td>01:12:43</td><td>840 MB</td><td><span class="tag success">Ativo</span></td></tr>
-              <tr><td>Pedro Lima</td><td>10.0.0.31</td><td>OpenVPN</td><td>04:21:05</td><td>5,1 GB</td><td><span class="tag warning">Alerta</span></td></tr>
+            <tbody id="dashboard-connections" data-compact="true" data-columns="6">
+              <tr><td colspan="6">Carregando conexões...</td></tr>
             </tbody>
           </table>
         </div>
       </section>
     </main>
   </div>
+  <script src="assets/js/app.js"></script>
 </body>
 </html>

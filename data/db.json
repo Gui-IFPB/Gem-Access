@@ -20,5 +20,78 @@
       "status": "active",
       "traffic": "230 MB"
     }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "name": "Guilherme",
+      "email": "guilherme@gemaccess.local",
+      "role": "Administrador",
+      "lastConnection": "Hoje, 09:42"
+    },
+    {
+      "id": 2,
+      "name": "Everton",
+      "email": "everton@gemaccess.local",
+      "role": "Usuário",
+      "lastConnection": "Hoje, 09:18"
+    },
+    {
+      "id": 3,
+      "name": "Mihael",
+      "email": "mihael@gemaccess.local",
+      "role": "Usuário",
+      "lastConnection": "Hoje, 07:35"
+    },
+    {
+      "id": 4,
+      "name": "Ana Costa",
+      "email": "ana@gemaccess.local",
+      "role": "Usuário",
+      "lastConnection": "Hoje, 08:51"
+    }
+  ],
+  "alerts": [
+    {
+      "id": 1,
+      "severity": "critical",
+      "title": "Múltiplas tentativas de conexão",
+      "description": "IP 200.100.50.20 apresentou comportamento fora do padrão.",
+      "time": "Hoje, 09:42",
+      "status": "active"
+    },
+    {
+      "id": 2,
+      "severity": "high",
+      "title": "Aumento incomum de tráfego",
+      "description": "O usuário Everton ultrapassou o volume esperado.",
+      "time": "Hoje, 08:35",
+      "status": "active"
+    },
+    {
+      "id": 3,
+      "severity": "medium",
+      "title": "Sessão VPN com duração elevada",
+      "description": "A sessão do usuário Guilherme permanece ativa há mais de 4 horas.",
+      "time": "Hoje, 07:12",
+      "status": "active"
+    }
+  ],
+  "network": [
+    {
+      "id": 1,
+      "name": "Servidor VPN",
+      "status": "online"
+    },
+    {
+      "id": 2,
+      "name": "Gateway principal",
+      "status": "online"
+    },
+    {
+      "id": 3,
+      "name": "Gateway secundário",
+      "status": "warning"
+    }
   ]
 }

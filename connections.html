@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 
-<body>
+<body data-page="connections">
 
   <div class="app">
 
@@ -161,6 +161,7 @@
   </div>
 
 
+  <script src="assets/js/app.js"></script>
   <script>
 
     /*
@@ -352,27 +353,27 @@
         linha.innerHTML = `
 
           <td>
-            ${conexao.user || "--"}
+            ${GemAccess.escapeHtml(conexao.user || "--")}
           </td>
 
           <td>
-            ${conexao.sourceIp || "--"}
+            ${GemAccess.escapeHtml(conexao.sourceIp || "--")}
           </td>
 
           <td>
-            ${conexao.vpnIp || "--"}
+            ${GemAccess.escapeHtml(conexao.vpnIp || "--")}
           </td>
 
           <td>
-            ${conexao.protocol || "--"}
+            ${GemAccess.escapeHtml(conexao.protocol || "--")}
           </td>
 
           <td>
-            ${conexao.duration || "--"}
+            ${GemAccess.escapeHtml(conexao.duration || "--")}
           </td>
 
           <td>
-            ${conexao.traffic || "--"}
+            ${GemAccess.escapeHtml(conexao.traffic || "--")}
           </td>
 
           <td>

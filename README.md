@@ -10,20 +10,20 @@ O **GEM Access** é um protótipo de interface web voltado ao monitoramento e à
 
 Criar uma interface centralizada que apresente, de forma organizada e visual, informações relacionadas a conexões VPN, usuários, tráfego, alertas e relatórios.
 
-Nesta etapa, o sistema é **exclusivamente um protótipo estático**. Não existe backend, banco de dados, autenticação real ou monitoramento efetivo de uma VPN.
+O projeto é um protótipo acadêmico com as telas de monitoramento conectadas a uma API local do JSON Server. Não há autenticação real nem monitoramento efetivo de uma VPN.
 
 ## Principais telas
 
 - **Login:** entrada visual para o sistema.
 - **Dashboard:** visão geral com indicadores, gráfico e conexões recentes.
-- **Conexões:** tabela com sessões VPN fictícias.
-- **Usuários:** usuários fictícios e seus respectivos status.
-- **Alertas:** eventos simulados para demonstração da interface.
-- **Relatórios:** indicadores históricos e gráficos fictícios.
+- **Conexões:** tabela de sessões com pesquisa e filtro por status.
+- **Usuários:** usuários cadastrados e status calculado a partir das conexões.
+- **Alertas:** eventos cadastrados e contador de alertas ativos.
+- **Relatórios:** indicadores calculados a partir das conexões e alertas cadastrados.
 
-## Funcionalidades previstas
+## Dados dinâmicos
 
-As funcionalidades abaixo fazem parte da proposta futura do projeto:
+As telas consomem os dados atuais do JSON Server e atualizam automaticamente a cada 15 segundos. Indicadores e gráficos são derivados dos registros existentes; eles não representam histórico real. O login e o monitoramento efetivo da VPN não fazem parte deste protótipo.
 
 - monitoramento de conexões VPN;
 - visualização de usuários conectados;
@@ -34,16 +34,29 @@ As funcionalidades abaixo fazem parte da proposta futura do projeto:
 
 ## Tecnologias
 
-Nesta etapa foram utilizadas somente:
+Tecnologias utilizadas:
 
 - HTML5
 - CSS3
-
-Não há JavaScript, backend ou banco de dados no protótipo.
+- JavaScript
+- JSON Server
 
 ## Dados
 
-Todos os usuários, endereços IP, volumes de tráfego, horários, alertas e demais informações exibidas nas telas são **fictícios** e servem exclusivamente para avaliação da interface.
+Os dados de exemplo são mantidos em `data/db.json`. O JSON Server disponibiliza os recursos `connections`, `users`, `alerts` e `network`.
+
+## Como executar
+
+1. Inicie a API na raiz do projeto:
+
+	```bash
+	npx json-server data/db.json --port 3000
+	```
+
+2. Abra `index.html` com a extensão Live Server do VS Code ou outro servidor HTTP local.
+3. Acesse `dashboard.html`. A API deve estar disponível em `http://localhost:3000`.
+
+Rotas disponíveis: `http://localhost:3000/connections`, `/users`, `/alerts` e `/network`.
 
 ## Estrutura
 
@@ -55,8 +68,13 @@ gem-access/
 ├── users.html
 ├── alerts.html
 ├── reports.html
+├── assets/
+│   └── js/
+│       └── app.js
 ├── css/
 │   └── style.css
+├── data/
+│   └── db.json
 └── README.md
 ```
 
@@ -84,6 +102,4 @@ O objetivo não é reproduzir essas ferramentas, mas utilizar suas característi
 
 ## Status
 
-**Protótipo estático**
-
-As funcionalidades serão implementadas em etapas posteriores.
+**Protótipo conectado ao JSON Server local**

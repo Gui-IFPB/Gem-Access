@@ -4,13 +4,11 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GEM Access | Alertas</title><link rel="stylesheet" href="css/style.css">
 </head>
-<body><div class="app">
+<body data-page="alerts"><div class="app">
   <aside class="sidebar"><a class="brand" href="dashboard.html"><img class="brand-logo" src="assets/logo.png" alt="Logo GEM Access"><div><strong>GEM Access</strong><span>VPN Monitoring</span></div></a>
-  <nav><a href="dashboard.html">Dashboard</a><a href="connections.html">Conexões</a><a href="users.html">Usuários</a><a class="active" href="alerts.html">Alertas <span class="badge">3</span></a><a href="reports.html">Relatórios</a></nav>
+  <nav><a href="dashboard.html">Dashboard</a><a href="connections.html">Conexões</a><a href="users.html">Usuários</a><a class="active" href="alerts.html">Alertas <span class="badge" id="alerts-badge">0</span></a><a href="reports.html">Relatórios</a></nav>
   <div class="sidebar-bottom"><a href="#">Configurações</a><a href="index.html">Sair</a></div></aside>
-  <main class="content"><header class="topbar"><div><p class="eyebrow">MONITORAMENTO</p><h1>Alertas</h1><p class="subtitle">Eventos fictícios para avaliação da interface.</p></div><div class="user-chip"><span class="status-dot"></span> Administrador</div></header>
-  <section class="alert-list">
-    <article class="alert-card critical"><div class="alert-icon">!</div><div><span class="alert-level">CRÍTICO</span><h2>Múltiplas tentativas de conexão</h2><p>IP 200.100.50.20 apresentou comportamento fora do padrão.</p><small>Hoje, 09:42</small></div></article>
-    <article class="alert-card high"><div class="alert-icon">!</div><div><span class="alert-level">ALTO</span><h2>Aumento incomum de tráfego</h2><p>O usuário Pedro Lima ultrapassou o volume fictício esperado.</p><small>Hoje, 08:35</small></div></article>
-    <article class="alert-card medium"><div class="alert-icon">!</div><div><span class="alert-level">MÉDIO</span><h2>Sessão VPN com duração elevada</h2><p>A sessão do usuário João Silva permanece ativa há mais de 4 horas.</p><small>Hoje, 07:12</small></div></article>
-  </section></main></div></body></html>
+  <main class="content"><header class="topbar"><div><p class="eyebrow">MONITORAMENTO</p><h1>Alertas</h1><p class="subtitle">Eventos registrados no sistema.</p></div><div class="user-chip"><span class="status-dot"></span> Administrador</div></header>
+  <section class="alert-list" id="alert-list"><p>Carregando alertas...</p></section></main></div>
+  <script src="assets/js/app.js"></script>
+</body></html>
