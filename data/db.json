@@ -5,6 +5,13 @@
       "user": "Guilherme",
       "vpnIp": "10.8.0.2",
       "sourceIp": "192.168.56.10",
+      "serverId": 1,
+      "sourceLocation": {
+        "city": "Recife",
+        "country": "Brasil",
+        "latitude": -8.0476,
+        "longitude": -34.877
+      },
       "protocol": "OpenVPN",
       "duration": "02:34:12",
       "status": "active",
@@ -15,10 +22,28 @@
       "user": "Everton",
       "vpnIp": "10.8.0.3",
       "sourceIp": "192.168.56.11",
+      "serverId": 1,
+      "sourceLocation": {
+        "city": "João Pessoa",
+        "country": "Brasil",
+        "latitude": -7.1195,
+        "longitude": -34.845
+      },
       "protocol": "WireGuard",
       "duration": "01:48:27",
       "status": "active",
       "traffic": "230 MB"
+    }
+  ],
+  "servers": [
+    {
+      "id": 1,
+      "name": "Servidor VPN principal",
+      "city": "São Paulo",
+      "country": "Brasil",
+      "latitude": -23.5505,
+      "longitude": -46.6333,
+      "status": "online"
     }
   ],
   "users": [

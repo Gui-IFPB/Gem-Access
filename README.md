@@ -17,13 +17,14 @@ O projeto é um protótipo acadêmico com as telas de monitoramento conectadas a
 - **Login:** entrada visual para o sistema.
 - **Dashboard:** visão geral com indicadores, gráfico e conexões recentes.
 - **Conexões:** tabela de sessões com pesquisa e filtro por status.
+- **Localização:** mapa mundial com a origem aproximada das sessões e a localização dos servidores VPN.
 - **Usuários:** usuários cadastrados e status calculado a partir das conexões.
 - **Alertas:** eventos cadastrados e contador de alertas ativos.
 - **Relatórios:** indicadores calculados a partir das conexões e alertas cadastrados.
 
 ## Dados dinâmicos
 
-As telas consomem os dados atuais do JSON Server e atualizam automaticamente a cada 15 segundos. Indicadores e gráficos são derivados dos registros existentes; eles não representam histórico real. O login e o monitoramento efetivo da VPN não fazem parte deste protótipo.
+As telas consomem os dados atuais do JSON Server e atualizam automaticamente a cada 15 segundos. Indicadores e gráficos são derivados dos registros existentes; eles não representam histórico real. O mapa usa coordenadas demonstrativas, pois os IPs privados do protótipo não podem ser localizados por GeoIP. O login e o monitoramento efetivo da VPN não fazem parte deste protótipo.
 
 - monitoramento de conexões VPN;
 - visualização de usuários conectados;
@@ -43,7 +44,7 @@ Tecnologias utilizadas:
 
 ## Dados
 
-Os dados de exemplo são mantidos em `data/db.json`. O JSON Server disponibiliza os recursos `connections`, `users`, `alerts` e `network`.
+Os dados de exemplo são mantidos em `data/db.json`. O JSON Server disponibiliza os recursos `connections`, `servers`, `users`, `alerts` e `network`.
 
 ## Como executar
 
@@ -56,7 +57,7 @@ Os dados de exemplo são mantidos em `data/db.json`. O JSON Server disponibiliza
 2. Abra `index.html` com a extensão Live Server do VS Code ou outro servidor HTTP local.
 3. Acesse `dashboard.html`. A API deve estar disponível em `http://localhost:3000`.
 
-Rotas disponíveis: `http://localhost:3000/connections`, `/users`, `/alerts` e `/network`.
+Rotas disponíveis: `http://localhost:3000/connections`, `/servers`, `/users`, `/alerts` e `/network`.
 
 ## Estrutura
 

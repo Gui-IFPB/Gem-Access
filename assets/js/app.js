@@ -181,6 +181,91 @@ function renderReports({ connections, alerts }) {
     : "<p>Nenhum dado disponível.</p>";
 }
 
+let locationMap;
+let locationLayers;
+
+function renderLocations({ connections, servers }) {
+  const mapElement = document.getElementById("location-map");
+  const sessionList = document.getElementById("location-sessions");
+  const activeConnections = connections.filter(connection => connection.status === "active");
+  const serverById = new Map(servers.map(server => [String(server.id), server]));
+  const mapStatus = document.getElementById("location-map-status");
+
+  document.getElementById("location-active-count").textContent = activeConnections.length;
+  if (!window.L) {
+    mapStatus.textContent = "Não foi possível carregar o mapa. Verifique sua conexão.";
+    return;
+  }
+
+  if (!locationMap) {
+    locationMap = L.map(mapElement, { minZoom: 2, maxZoom: 12, worldCopyJump: true }).setView([15, 0], 2);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(locationMap);
+    locationLayers = L.layerGroup().addTo(locationMap);
+  }
+
+  locationLayers.clearLayers();
+  const plottedServers = new Set();
+  const plottedLocations = [];
+  const pointIcon = kind => L.divIcon({
+    className: "location-marker-wrap",
+    html: `<span class="location-marker ${kind}"></span>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9]
+  });
+  const hasCoordinates = location => Number.isFinite(Number(location?.latitude)) && Number.isFinite(Number(location?.longitude));
+
+  servers.forEach(server => {
+    if (!hasCoordinates(server)) return;
+    const coordinates = [Number(server.latitude), Number(server.longitude)];
+    L.marker(coordinates, { icon: pointIcon("server-marker") })
+      .bindPopup(`<strong>${escapeHtml(server.name)}</strong><br>${escapeHtml(server.city)}, ${escapeHtml(server.country)}<br>Servidor VPN`)
+      .addTo(locationLayers);
+    plottedServers.add(String(server.id));
+    plottedLocations.push(coordinates);
+  });
+
+  sessionList.innerHTML = activeConnections.length
+    ? activeConnections.map(connection => {
+      const origin = connection.sourceLocation;
+      const server = serverById.get(String(connection.serverId));
+      const originLabel = origin?.city && origin?.country
+        ? `${escapeHtml(origin.city)}, ${escapeHtml(origin.country)}`
+        : "Localização indisponível";
+      const serverLabel = server?.city && server?.country
+        ? `${escapeHtml(server.city)}, ${escapeHtml(server.country)}`
+        : "Servidor sem localização cadastrada";
+
+      if (hasCoordinates(origin)) {
+        const originCoordinates = [Number(origin.latitude), Number(origin.longitude)];
+        L.marker(originCoordinates, { icon: pointIcon("user-marker") })
+          .bindPopup(`<strong>${escapeHtml(connection.user)}</strong><br>${originLabel}<br>IP de origem: ${escapeHtml(connection.sourceIp)}`)
+          .addTo(locationLayers);
+        plottedLocations.push(originCoordinates);
+        if (server && hasCoordinates(server)) {
+          L.polyline([originCoordinates, [Number(server.latitude), Number(server.longitude)]], {
+            color: "#287a62", weight: 2, opacity: 0.65, dashArray: "5 7"
+          }).addTo(locationLayers);
+        }
+      }
+
+      if (server && !plottedServers.has(String(server.id)) && hasCoordinates(server)) {
+        L.marker([Number(server.latitude), Number(server.longitude)], { icon: pointIcon("server-marker") })
+          .bindPopup(`<strong>${escapeHtml(server.name)}</strong><br>${serverLabel}<br>Servidor VPN`)
+          .addTo(locationLayers);
+        plottedServers.add(String(server.id));
+      }
+
+      return `<li><strong>${escapeHtml(connection.user)}</strong><span>Origem: ${originLabel}</span><span>Servidor: ${serverLabel}</span></li>`;
+    }).join("")
+    : "<li class=\"location-empty\">Nenhuma sessão VPN ativa.</li>";
+
+  mapStatus.textContent = "Dados demonstrativos. As coordenadas de origem representam uma estimativa por IP.";
+  document.getElementById("location-updated").textContent = `Atualizado às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
+  requestAnimationFrame(() => locationMap.invalidateSize());
+}
+
 async function loadPage() {
   const page = document.body.dataset.page;
   try {
@@ -192,7 +277,8 @@ async function loadPage() {
       dashboard: ["connections", "alerts", "network"],
       users: ["users", "connections", "alerts"],
       alerts: ["alerts"],
-      reports: ["connections", "alerts"]
+      reports: ["connections", "alerts"],
+      locations: ["connections", "servers", "alerts"]
     }[page] || [];
     const data = Object.fromEntries(await Promise.all(resources.map(async resource => [resource, await loadResource(resource)])));
     updateAlertsBadge(data.alerts || []);
@@ -200,6 +286,7 @@ async function loadPage() {
     if (page === "users") renderUsers({ users: data.users, connections: data.connections });
     if (page === "alerts") renderAlerts(data.alerts);
     if (page === "reports") renderReports({ connections: data.connections, alerts: data.alerts });
+    if (page === "locations") renderLocations({ connections: data.connections, servers: data.servers });
   } catch (error) {
     console.error("Erro ao carregar dados da API:", error);
     const message = "Não foi possível carregar os dados. Verifique se o JSON Server está rodando.";
@@ -207,6 +294,8 @@ async function loadPage() {
     showTableMessage(document.getElementById("users-table"), message, 5);
     const alertList = document.getElementById("alert-list");
     if (alertList) alertList.textContent = message;
+    const locationStatus = document.getElementById("location-map-status");
+    if (locationStatus) locationStatus.textContent = message;
     const badge = document.getElementById("alerts-badge");
     if (badge) badge.textContent = "!";
   }

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GEM Access | Localização</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="locations">
+  <div class="app">
+    <aside class="sidebar">
+      <a class="brand" href="dashboard.html">
+        <img class="brand-logo" src="assets/logo.png" alt="Logo GEM Access">
+        <div><strong>GEM Access</strong><span>VPN Monitoring</span></div>
+      </a>
+      <nav>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="connections.html">Conexões</a>
+        <a class="active" href="locations.html">Localização</a>
+        <a href="users.html">Usuários</a>
+        <a href="alerts.html">Alertas <span class="badge" id="alerts-badge">0</span></a>
+        <a href="reports.html">Relatórios</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <a href="#">Configurações</a>
+        <a href="index.html">Sair</a>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">MONITORAMENTO</p>
+          <h1>Localização VPN</h1>
+          <p class="subtitle">Origem aproximada das sessões e localização dos servidores.</p>
+        </div>
+        <div class="user-chip"><span class="status-dot"></span> Administrador</div>
+      </header>
+
+      <section class="location-layout">
+        <article class="panel location-map-panel">
+          <div class="panel-header">
+            <div><h2>Mapa mundial</h2><p><strong id="location-active-count">0</strong> sessões ativas</p></div>
+            <span class="location-updated" id="location-updated">Aguardando dados</span>
+          </div>
+          <div class="map-legend">
+            <span><i class="legend-dot user-legend"></i> Origem do usuário</span>
+            <span><i class="legend-dot server-legend"></i> Servidor VPN</span>
+            <span><i class="legend-line"></i> Rota da conexão</span>
+          </div>
+          <div id="location-map" class="location-map" aria-label="Mapa mundial com as origens das conexões e os servidores VPN"></div>
+          <p class="location-note" id="location-map-status">Carregando mapa e conexões...</p>
+        </article>
+
+        <aside class="panel location-sessions-panel">
+          <div class="panel-header"><div><h2>Sessões ativas</h2><p>Origem e servidor associado.</p></div></div>
+          <ul id="location-sessions" class="location-sessions"><li class="location-empty">Carregando conexões...</li></ul>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
