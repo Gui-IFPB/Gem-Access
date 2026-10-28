@@ -46,6 +46,24 @@ Tecnologias utilizadas:
 
 Os dados de exemplo são mantidos em `data/db.json`. O JSON Server disponibiliza os recursos `connections`, `servers`, `users`, `alerts` e `network`.
 
+## Arquitetura ESM e eventos
+
+O código foi reorganizado em módulos ECMAScript para separar responsabilidades e facilitar a manutenção:
+
+- `assets/js/api.js`: concentrado o acesso à API local com `fetch`, incluindo tratamento de erros e helpers para `GET`, `POST`, `PUT`/`PATCH` e `DELETE`.
+- `assets/js/utils.js`: funções utilitárias, sanitização de HTML, conversão de tráfego e formatos de data/hora.
+- `assets/js/renderers.js`: renderização de dashboards, tabelas, alertas, relatórios e mapa.
+- `assets/js/app.js`: ponto de entrada do sistema, que monta o fluxo de cada página e dispara a inicialização dos elementos da interface.
+
+Todos os scripts carregados nas páginas usam `type="module"` e `import/export`, seguindo o padrão ESM. Isso permite organizar melhor o código, reaproveitar funções e manter a lógica de cada tela isolada.
+
+O tratamento de eventos também foi implementado diretamente no JavaScript:
+
+- formulário de login com `submit` e validação de email/senha;
+- campo de pesquisa em `connections.html` com `input`;
+- filtro por status com `change`;
+- atualização periódica das telas após carregamento dos dados.
+
 ## Como executar
 
 1. Inicie a API na raiz do projeto:
