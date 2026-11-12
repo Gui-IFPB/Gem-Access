@@ -8,7 +8,7 @@ export async function apiRequest(resource, options = {}) {
       "Content-Type": "application/json",
       ...headers
     },
-    body: body ? JSON.stringify(body) : undefined
+    body: body === undefined ? undefined : JSON.stringify(body)
   });
 
   if (!response.ok) {

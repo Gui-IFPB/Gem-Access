@@ -96,6 +96,40 @@
       </header>
 
 
+      <section class="panel connection-editor" aria-labelledby="connection-form-title">
+        <div class="panel-header">
+          <div>
+            <h2 id="connection-form-title">Cadastrar conexão</h2>
+            <p>Adicione uma conexão demonstrativa ou edite um registro existente.</p>
+          </div>
+        </div>
+        <form id="connection-form" class="connection-form">
+          <label>Usuário<input id="connection-user" name="user" required></label>
+          <label>IP de origem<input id="connection-source-ip" name="sourceIp" required></label>
+          <label>IP VPN<input id="connection-vpn-ip" name="vpnIp" required></label>
+          <label>Protocolo
+            <select id="connection-protocol" name="protocol" required>
+              <option>OpenVPN</option>
+              <option>WireGuard</option>
+            </select>
+          </label>
+          <label>Duração (HH:MM:SS)<input id="connection-duration" name="duration" placeholder="00:30:00" required></label>
+          <label>Tráfego<input id="connection-traffic" name="traffic" placeholder="100 MB" required></label>
+          <label>Status
+            <select id="connection-status" name="status" required>
+              <option value="active">Ativo</option>
+              <option value="alert">Alerta</option>
+              <option value="offline">Offline</option>
+            </select>
+          </label>
+          <div class="connection-form-actions">
+            <button id="connection-submit" type="submit" class="btn btn-primary">Cadastrar conexão</button>
+            <button id="connection-cancel" type="button" class="btn btn-secondary">Cancelar edição</button>
+          </div>
+          <p id="connection-message" class="form-message" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
       <section class="panel">
 
         <div class="toolbar">
@@ -105,9 +139,10 @@
             class="search"
             type="text"
             placeholder="Pesquisar usuário ou IP..."
+            aria-label="Pesquisar usuário ou IP"
           >
 
-          <select id="status-filter">
+          <select id="status-filter" aria-label="Filtrar conexões por status">
 
             <option value="all">
               Todos os status
@@ -119,6 +154,10 @@
 
             <option value="alert">
               Alerta
+            </option>
+
+            <option value="offline">
+              Offline
             </option>
 
           </select>
@@ -140,6 +179,7 @@
                 <th>Duração</th>
                 <th>Tráfego</th>
                 <th>Status</th>
+                <th>Ações</th>
               </tr>
 
             </thead>
@@ -147,7 +187,7 @@
             <tbody id="connections-table">
 
               <tr>
-                <td colspan="7">
+                <td colspan="8">
                   Carregando conexões...
                 </td>
               </tr>
@@ -166,18 +206,6 @@
 
 
   <script type="module" src="assets/js/app.js"></script>
-
-
-    /*
-     * Atualiza os dados automaticamente
-     * a cada 10 segundos.
-     */
-    setInterval(
-      carregarConexoes,
-      10000
-    );
-
-  </script>
 
 </body>
 </html>
