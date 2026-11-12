@@ -1,15 +1,37 @@
-import { apiRequest, loadResource } from './api.js';
+import { apiRequest, clearAuthToken, getAuthToken, loadResource, login, logout } from './api.js';
 import { renderAlerts, renderBreakdown, renderDashboard, renderLocations, renderReports, renderUsers, renderConnectionRows, updateAlertsBadge } from './renderers.js';
 import { escapeHtml, showTableMessage } from './utils.js';
 
 const page = document.body?.dataset?.page;
 
+function showApiError(error) {
+  const content = document.querySelector(".content");
+  if (!content) return;
+
+  let banner = document.getElementById("api-error");
+  if (!banner) {
+    banner = document.createElement("p");
+    banner.id = "api-error";
+    banner.className = "api-error";
+    banner.setAttribute("role", "alert");
+    content.prepend(banner);
+  }
+  banner.textContent = error instanceof Error ? error.message : "Não foi possível carregar os dados.";
+}
+
 async function loadPage() {
+  if (page === "login") return;
+  if (!getAuthToken()) {
+    window.location.replace("index.html");
+    return;
+  }
+
   try {
     if (page === "connections") {
       initConnectionsPage();
       const alerts = await loadResource("alerts");
       updateAlertsBadge(alerts);
+      document.getElementById("api-error")?.remove();
       return;
     }
 
@@ -30,9 +52,15 @@ async function loadPage() {
     if (page === "alerts") renderAlerts(data.alerts || []);
     if (page === "reports") renderReports({ connections: data.connections, alerts: data.alerts || [] });
     if (page === "locations") renderLocations({ connections: data.connections, servers: data.servers || [] });
+    document.getElementById("api-error")?.remove();
   } catch (error) {
     console.error("Erro ao carregar dados da API:", error);
-    const message = "Não foi possível carregar os dados. Verifique se o JSON Server está rodando.";
+    if (error?.status === 401) {
+      window.location.replace("index.html");
+      return;
+    }
+    const message = error instanceof Error ? error.message : "Não foi possível carregar os dados.";
+    showApiError(error);
     const dashboard = document.getElementById("dashboard-connections");
     const usersTable = document.getElementById("users-table");
     const alertList = document.getElementById("alert-list");
@@ -139,7 +167,7 @@ function initConnectionsPage() {
       await loadConnections();
     } catch (error) {
       console.error("Erro ao salvar conexão:", error);
-      setMessage("Não foi possível salvar a conexão. Verifique a API e tente novamente.", true);
+      setMessage(error instanceof Error ? error.message : "Não foi possível salvar a conexão.", true);
     }
   });
 
@@ -175,7 +203,7 @@ function initConnectionsPage() {
         await loadConnections();
       } catch (error) {
         console.error("Erro ao excluir conexão:", error);
-        setMessage("Não foi possível excluir a conexão. Verifique a API e tente novamente.", true);
+        setMessage(error instanceof Error ? error.message : "Não foi possível excluir a conexão.", true);
       }
     }
   });
@@ -187,7 +215,11 @@ function initConnectionsPage() {
       renderConnections();
     } catch (error) {
       console.error("Erro ao carregar conexões:", error);
-      table.innerHTML = '<tr><td colspan="8">Não foi possível carregar os dados.<br>Verifique se o JSON Server está rodando.</td></tr>';
+      if (error?.status === 401) {
+        window.location.replace("index.html");
+        return;
+      }
+      showTableMessage(table, error instanceof Error ? error.message : "Não foi possível carregar as conexões.", 8);
     }
   };
 
@@ -198,23 +230,57 @@ function initConnectionsPage() {
 function initLoginForm() {
   const form = document.querySelector(".login-form");
   if (!form) return;
+  if (getAuthToken()) {
+    window.location.replace("dashboard.html");
+    return;
+  }
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const email = document.getElementById("email");
     const password = document.getElementById("password");
+    const message = document.getElementById("login-message");
+    const submit = form.querySelector('button[type="submit"]');
 
-    if (!email?.value || !password?.value) {
-      window.alert("Informe o e-mail e a senha para entrar.");
+    if (!email?.value.trim() || !password?.value) {
+      message.textContent = "Informe o e-mail e a senha para entrar.";
       return;
     }
 
-    window.location.href = "dashboard.html";
+    submit.disabled = true;
+    message.classList.remove("form-message-error");
+    message.textContent = "Validando acesso...";
+    try {
+      await login(email.value.trim(), password.value);
+      window.location.assign("dashboard.html");
+    } catch (error) {
+      message.classList.add("form-message-error");
+      message.textContent = error instanceof Error ? error.message : "Não foi possível entrar.";
+    } finally {
+      submit.disabled = false;
+    }
+  });
+}
+
+function initLogout() {
+  document.querySelectorAll('.sidebar-bottom a[href="index.html"]').forEach((link) => {
+    link.addEventListener("click", async (event) => {
+      event.preventDefault();
+      try {
+        await logout();
+      } catch (error) {
+        console.error("Erro ao encerrar sessão na API:", error);
+        clearAuthToken();
+      }
+      window.location.assign("index.html");
+    });
   });
 }
 
 if (page === "login") {
   initLoginForm();
+} else {
+  initLogout();
 }
 
 loadPage();

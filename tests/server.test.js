@@ -13,7 +13,10 @@ test("resource routes validate input, perform CRUD, and return centralized error
   const fixture = JSON.parse(await readFile(new URL("../data/db.json", import.meta.url), "utf8"));
   await writeFile(dataFile, JSON.stringify(fixture), "utf8");
 
-  const server = createApp({ store: createJsonStore(dataFile) }).listen(0);
+  const server = createApp({
+    store: createJsonStore(dataFile),
+    auth: { email: "admin@test.local", password: "test-password" }
+  }).listen(0);
   await once(server, "listening");
   t.after(async () => {
     server.close();
@@ -22,13 +25,22 @@ test("resource routes validate input, perform CRUD, and return centralized error
   });
 
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
-  const listResponse = await fetch(`${baseUrl}/connections`);
+  const loginResponse = await fetch(`${baseUrl}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "admin@test.local", password: "test-password" })
+  });
+  assert.equal(loginResponse.status, 200);
+  const { token } = await loginResponse.json();
+  const authorization = { Authorization: `Bearer ${token}` };
+
+  const listResponse = await fetch(`${baseUrl}/connections`, { headers: authorization });
   assert.equal(listResponse.status, 200);
   assert.equal((await listResponse.json()).length, 2);
 
   const invalidResponse = await fetch(`${baseUrl}/connections`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authorization },
     body: JSON.stringify({ user: "Missing fields" })
   });
   assert.equal(invalidResponse.status, 400);
@@ -36,7 +48,7 @@ test("resource routes validate input, perform CRUD, and return centralized error
 
   const malformedResponse = await fetch(`${baseUrl}/connections`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authorization },
     body: "{"
   });
   assert.equal(malformedResponse.status, 400);
@@ -44,7 +56,7 @@ test("resource routes validate input, perform CRUD, and return centralized error
 
   const createResponse = await fetch(`${baseUrl}/connections`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authorization },
     body: JSON.stringify({
       user: "Test User",
       sourceIp: "192.168.1.20",
@@ -62,7 +74,7 @@ test("resource routes validate input, perform CRUD, and return centralized error
 
   const replaceResponse = await fetch(`${baseUrl}/connections/${created.id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authorization },
     body: JSON.stringify({
       user: "Test User Replaced",
       sourceIp: "192.168.1.21",
@@ -79,21 +91,66 @@ test("resource routes validate input, perform CRUD, and return centralized error
 
   const patchResponse = await fetch(`${baseUrl}/connections/${created.id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authorization },
     body: JSON.stringify({ status: "offline" })
   });
   assert.equal(patchResponse.status, 200);
   assert.equal((await patchResponse.json()).status, "offline");
 
-  const deleteResponse = await fetch(`${baseUrl}/connections/${created.id}`, { method: "DELETE" });
+  const deleteResponse = await fetch(`${baseUrl}/connections/${created.id}`, { method: "DELETE", headers: authorization });
   assert.equal(deleteResponse.status, 204);
 
-  const notFoundResponse = await fetch(`${baseUrl}/connections/${created.id}`);
+  const notFoundResponse = await fetch(`${baseUrl}/connections/${created.id}`, { headers: authorization });
   assert.equal(notFoundResponse.status, 404);
   assert.equal((await notFoundResponse.json()).error.code, "NOT_FOUND");
 
   const persisted = JSON.parse(await readFile(dataFile, "utf8"));
   assert.equal(persisted.connections.length, 2);
+});
+
+test("resource routes reject missing or invalid session tokens", async (t) => {
+  const server = createApp({
+    auth: { email: "admin@test.local", password: "test-password" }
+  }).listen(0);
+  await once(server, "listening");
+  t.after(async () => {
+    server.close();
+    await once(server, "close");
+  });
+
+  const baseUrl = `http://127.0.0.1:${server.address().port}`;
+  const unauthenticated = await fetch(`${baseUrl}/connections`);
+  assert.equal(unauthenticated.status, 401);
+  assert.equal((await unauthenticated.json()).error.code, "UNAUTHORIZED");
+
+  const invalidLogin = await fetch(`${baseUrl}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "admin@test.local", password: "wrong-password" })
+  });
+  assert.equal(invalidLogin.status, 401);
+  assert.equal((await invalidLogin.json()).error.code, "INVALID_CREDENTIALS");
+
+  const validLogin = await fetch(`${baseUrl}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "admin@test.local", password: "test-password" })
+  });
+  const { token } = await validLogin.json();
+  const authenticated = await fetch(`${baseUrl}/connections`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  assert.equal(authenticated.status, 200);
+
+  const logout = await fetch(`${baseUrl}/auth/logout`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  assert.equal(logout.status, 204);
+  const expiredSession = await fetch(`${baseUrl}/connections`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  assert.equal(expiredSession.status, 401);
 });
 
 test("unknown routes return the API error format", async (t) => {

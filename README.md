@@ -46,7 +46,7 @@ O GEM Access não substitui essas ferramentas nem administra servidores VPN nest
    ```
 
 2. Abra [index.html](index.html) com a extensão Live Server do VS Code ou outro servidor HTTP em `localhost`/`127.0.0.1`.
-3. A API fica disponível em `http://localhost:3000`. Verifique `/health` ou consulte um recurso, por exemplo `/connections`.
+3. A API fica disponível em `http://localhost:3000`. Verifique `/health`; os recursos de dados exigem autenticação pelo login.
 4. Execute os testes com:
 
    ```bash
@@ -63,7 +63,7 @@ Para demonstrar somente a etapa 1.1, pare o Express e execute `npx json-server d
 - `server/middleware/validateResource.js`: verifica campos obrigatórios, formatos, valores permitidos e campos desconhecidos.
 - `server/middleware/errorHandler.js`: transforma erros de validação, JSON inválido, recurso ou rota inexistente e falhas internas em respostas JSON padronizadas.
 
-Os recursos `connections`, `servers`, `users`, `alerts` e `network` oferecem `GET`, `POST`, `PUT`, `PATCH` e `DELETE`. O armazenamento em `data/db.json` é provisório; Prisma, migrations e autenticação ainda não foram implementados.
+Os recursos `connections`, `servers`, `users`, `alerts` e `network` oferecem `GET`, `POST`, `PUT`, `PATCH` e `DELETE`. Faça login em `/auth/login` com as credenciais de demonstração `admin@gemaccess.local` / `gemaccess123`; o token retornado deve ser enviado como `Authorization: Bearer <token>`. A sessão do navegador fica em `sessionStorage` e é encerrada ao sair ou após oito horas. Para desenvolvimento, configure `GEM_ACCESS_ADMIN_EMAIL` e `GEM_ACCESS_ADMIN_PASSWORD` para substituir as credenciais de demonstração. O armazenamento em `data/db.json` é provisório, e a autenticação implementada é adequada apenas para demonstração local, não para produção.
 
 ## Páginas / Telas da Aplicação (GitHub Pages)
 
@@ -71,7 +71,7 @@ O GitHub Pages está configurado. As telas disponíveis no repositório são:
 
 - 🏠 **Índice / Login:** [index.html](index.html)
 - 📊 **Dashboard:** [dashboard.html](dashboard.html)
-- 🔑 **Autenticação:** [index.html](index.html) (tela demonstrativa; sem autenticação real)
+- 🔑 **Autenticação:** [index.html](index.html) (login validado pela API)
 - 🔌 **Conexões:** [connections.html](connections.html)
 - 🌐 **Localização:** [locations.html](locations.html)
 - 🚨 **Alertas:** [alerts.html](alerts.html)
@@ -86,11 +86,9 @@ O GitHub Pages está configurado. As telas disponíveis no repositório são:
 - [x] Consumo de API simulada com `fetch` e JSON Server para a etapa 1.1.
 - [x] API REST Express para os recursos do protótipo, com operações CRUD, validação e tratamento centralizado de erros.
 - [x] Persistência provisória das operações da API no arquivo `data/db.json`.
-- [ ] Autenticação real e controle de acesso de operadores com JWT.
+- [x] Login validado pela API, token de sessão no cliente e proteção das rotas de dados.
 - [ ] Persistência relacional com Prisma ORM e migrations.
 - [ ] Coleta de dados reais de VPN/rede, notificações automáticas e exportação de relatórios.
-
-O formulário de login atual é apenas visual/demonstrativo; qualquer e-mail válido e senha não vazia permitem navegar para o dashboard.
 
 ## Estratégia para Obtenção de Dados Reais (Hipóteses Técnicas)
 
