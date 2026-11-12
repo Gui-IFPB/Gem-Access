@@ -24,9 +24,9 @@ O GEM Access não substitui essas ferramentas nem administra servidores VPN nest
 
 ## Equipe
 
-- **Guilherme Manoel da Silva** - Matrícula: a informar | GitHub: a informar
-- **Everton Lopes** - Matrícula: a informar | GitHub: a informar
-- **Mihael Reinaldo** - Matrícula: a informar | GitHub: a informar
+- **Guilherme Manoel da Silva** - Matrícula: 20232380026 | GitHub: Gui-IFPB
+- **Everton Lopes** - Matrícula: 20242380007 a informar | GitHub: Everton-IFPB 
+- **Mihael Reinaldo** - Matrícula: 20232380012 a informar | GitHub:Mihael-IFPB
 
 ## Documentação & Recursos
 
@@ -67,7 +67,7 @@ Os recursos `connections`, `servers`, `users`, `alerts` e `network` oferecem `GE
 
 ## Páginas / Telas da Aplicação (GitHub Pages)
 
-O GitHub Pages ainda não está configurado. As telas disponíveis no repositório são:
+O GitHub Pages está configurado. As telas disponíveis no repositório são:
 
 - 🏠 **Índice / Login:** [index.html](index.html)
 - 📊 **Dashboard:** [dashboard.html](dashboard.html)
