@@ -38,10 +38,11 @@ O GEM Access não substitui essas ferramentas nem administra servidores VPN nest
 
 ### Execução local
 
-1. Instale as dependências e inicie a API Express:
+1. Instale as dependências, aplique a migration e carregue os dados demonstrativos:
 
    ```bash
    npm install
+   npm run db:setup
    npm run dev
    ```
 
@@ -59,9 +60,19 @@ Para demonstrar somente a etapa 1.1, pare o Express e execute `npx json-server d
 
 - `server/routes/`: define as rotas REST dos recursos.
 - `server/controllers/`: coordena requisições, operações do modelo e respostas HTTP.
-- `server/models/`: lê e persiste os registros no arquivo JSON, serializando operações de escrita no processo.
+- `server/models/`: `prismaStore.js` implementa persistência relacional com Prisma; `jsonStore.js` permanece como adapter simples para testes e compatibilidade.
 - `server/middleware/validateResource.js`: verifica campos obrigatórios, formatos, valores permitidos e campos desconhecidos.
 - `server/middleware/errorHandler.js`: transforma erros de validação, JSON inválido, recurso ou rota inexistente e falhas internas em respostas JSON padronizadas.
+
+### Banco de dados e persistência
+
+O servidor usa SQLite por meio do Prisma ORM. O schema fica em `prisma/schema.prisma`, o client é gerado pelo Prisma e a conexão padrão cria `data/gem-access.sqlite`. O arquivo do banco é local e não deve ser versionado.
+
+O schema define `User`, `Server`, `Connection`, `Alert` e `NetworkComponent` (tabela `network`). Um usuário pode ter várias conexões; cada conexão pertence a um servidor e pode estar associada a um usuário. A associação do usuário é opcional para manter registros demonstrativos que ainda não correspondam a uma conta cadastrada, enquanto o nome original continua preservado na conexão. A exclusão de um usuário mantém as conexões e remove somente a associação; servidores com conexões não podem ser excluídos. E-mail de usuário é único. A localização de origem da conexão é armazenada em colunas próprias e convertida para o objeto `sourceLocation` na API.
+
+As migrations SQL versionadas ficam em `prisma/migrations/`. `npm run db:migrate` aplica migrations pendentes; para evoluir o schema durante o desenvolvimento, altere `prisma/schema.prisma` e gere uma migration com `npx prisma migrate dev --name descricao-da-alteracao`. `npm run db:setup` aplica as migrations e importa `data/db.json` uma única vez para iniciar a demonstração; a carga é ignorada se o banco já contiver registros.
+
+O `prismaStore` integra o client às operações CRUD já expostas pela API. `P2002` (valor único duplicado) vira `409 DUPLICATE_RECORD`; `P2003` (integridade referencial) vira `409 RELATION_CONFLICT`; registro ausente vira `404 NOT_FOUND`. Outros erros do banco são encapsulados como `500 PERSISTENCE_ERROR`, sem expor detalhes internos. A validação de entrada e o middleware central continuam responsáveis pelos erros HTTP padronizados.
 
 Os recursos `connections`, `servers`, `users`, `alerts` e `network` oferecem `GET`, `POST`, `PUT`, `PATCH` e `DELETE`. Faça login em `/auth/login` com as credenciais de demonstração `admin@gemaccess.local` / `gemaccess123`; o token retornado deve ser enviado como `Authorization: Bearer <token>`. A sessão do navegador fica em `sessionStorage` e é encerrada ao sair ou após oito horas. Para desenvolvimento, configure `GEM_ACCESS_ADMIN_EMAIL` e `GEM_ACCESS_ADMIN_PASSWORD` para substituir as credenciais de demonstração. O armazenamento em `data/db.json` é provisório, e a autenticação implementada é adequada apenas para demonstração local, não para produção.
 
@@ -85,7 +96,7 @@ O GitHub Pages está configurado. As telas disponíveis no repositório são:
 - [x] Busca por usuário/IP e filtro por status na tela de conexões.
 - [x] Consumo de API simulada com `fetch` e JSON Server para a etapa 1.1.
 - [x] API REST Express para os recursos do protótipo, com operações CRUD, validação e tratamento centralizado de erros.
-- [x] Persistência provisória das operações da API no arquivo `data/db.json`.
+- [x] Persistência relacional SQLite com Prisma, migrations, relacionamentos, seed inicial e tratamento de erros de integridade.
 - [x] Login validado pela API, token de sessão no cliente e proteção das rotas de dados.
 - [ ] Persistência relacional com Prisma ORM e migrations.
 - [ ] Coleta de dados reais de VPN/rede, notificações automáticas e exportação de relatórios.
@@ -99,4 +110,4 @@ As opções abaixo são hipóteses para etapas futuras. O protótipo ainda não 
   - WireGuard: consultar contadores e handshakes recentes com `wg show all transfer` e `wg show all latest-handshakes`; consultas periódicas seriam necessárias para construir histórico.
   - Infraestrutura: considerar API do Zabbix ou métricas via SNMP para estado de servidores, gateways e alertas.
   - Toda coleta dependeria de autorização, escopo de leitura mínimo e cuidados com IPs, identificadores e retenção de logs.
-- **Armazenamento & API:** um serviço Express pode normalizar as fontes em um modelo comum (usuário, IPs, protocolo, servidor, horários, tráfego e status). A camada atual grava em JSON; uma etapa futura pode migrar a persistência para banco relacional com Prisma ORM e migrations.
+- **Armazenamento & API:** o serviço Express já normaliza os dados demonstrativos em um modelo relacional SQLite com Prisma. A coleta real das fontes ainda é uma etapa futura; os registros atuais continuam sendo fictícios.

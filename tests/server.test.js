@@ -110,6 +110,7 @@ test("resource routes validate input, perform CRUD, and return centralized error
 
 test("resource routes reject missing or invalid session tokens", async (t) => {
   const server = createApp({
+    store: createJsonStore(),
     auth: { email: "admin@test.local", password: "test-password" }
   }).listen(0);
   await once(server, "listening");

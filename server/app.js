@@ -4,6 +4,7 @@ import { notFound } from "./middleware/notFound.js";
 import { createResourceRouter } from "./routes/resourceRoutes.js";
 import { createAuthRoutes } from "./routes/authRoutes.js";
 import { createJsonStore } from "./models/jsonStore.js";
+import { createPrismaStore } from "./models/prismaStore.js";
 
 export const resources = ["connections", "servers", "users", "alerts", "network"];
 
@@ -24,7 +25,7 @@ function developmentCors(request, response, next) {
   return next();
 }
 
-export function createApp({ store = createJsonStore(), auth } = {}) {
+export function createApp({ store = createPrismaStore(), auth } = {}) {
   const app = express();
   const authRoutes = createAuthRoutes(auth);
 

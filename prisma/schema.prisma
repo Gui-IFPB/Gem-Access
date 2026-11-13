@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id             Int          @id @default(autoincrement())
+  name           String
+  email          String       @unique
+  role           String
+  lastConnection String       @default("")
+  connections    Connection[]
+
+  @@map("users")
+}
+
+model Server {
+  id          Int          @id @default(autoincrement())
+  name        String
+  city        String
+  country     String
+  latitude    Float?
+  longitude   Float?
+  status      String
+  connections Connection[]
+
+  @@map("servers")
+}
+
+model Connection {
+  id              Int     @id @default(autoincrement())
+  userId          Int?
+  userName        String
+  vpnIp           String
+  sourceIp        String
+  serverId        Int
+  sourceCity      String?
+  sourceCountry   String?
+  sourceLatitude  Float?
+  sourceLongitude Float?
+  protocol        String
+  duration        String
+  status          String
+  traffic         String
+  user            User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  server          Server  @relation(fields: [serverId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([serverId])
+  @@map("connections")
+}
+
+model Alert {
+  id          Int    @id @default(autoincrement())
+  severity    String
+  title       String
+  description String
+  time        String
+  status      String
+
+  @@map("alerts")
+}
+
+model NetworkComponent {
+  id     Int    @id @default(autoincrement())
+  name   String
+  status String
+
+  @@map("network")
+}

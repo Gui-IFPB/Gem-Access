@@ -5,9 +5,17 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "node server/seed.js",
+    "db:setup": "npm run db:migrate && npm run db:seed"
   },
   "dependencies": {
+    "@prisma/adapter-better-sqlite3": "^7.10.1",
+    "@prisma/client": "^7.10.1",
     "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "prisma": "^7.10.1"
   }
 }
