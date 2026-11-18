@@ -25,9 +25,9 @@ function developmentCors(request, response, next) {
   return next();
 }
 
-export function createApp({ store = createPrismaStore(), auth } = {}) {
+export function createApp({ store = createPrismaStore(), auth = {} } = {}) {
   const app = express();
-  const authRoutes = createAuthRoutes(auth);
+  const authRoutes = createAuthRoutes({ ...auth, store });
 
   app.disable("x-powered-by");
   app.use(developmentCors);

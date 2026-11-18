@@ -15,7 +15,7 @@ test("resource routes validate input, perform CRUD, and return centralized error
 
   const server = createApp({
     store: createJsonStore(dataFile),
-    auth: { email: "admin@test.local", password: "test-password" }
+    auth: { jwtSecret: "test-secret-with-more-than-thirty-two-bytes" }
   }).listen(0);
   await once(server, "listening");
   t.after(async () => {
@@ -25,14 +25,23 @@ test("resource routes validate input, perform CRUD, and return centralized error
   });
 
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
-  const loginResponse = await fetch(`${baseUrl}/auth/login`, {
+  const registrationResponse = await fetch(`${baseUrl}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: "admin@test.local", password: "test-password" })
+    body: JSON.stringify({ name: "Admin Teste", email: "admin@test.local", password: "test-password" })
   });
-  assert.equal(loginResponse.status, 200);
-  const { token } = await loginResponse.json();
+  assert.equal(registrationResponse.status, 201);
+  const registered = await registrationResponse.json();
+  assert.equal(registered.user.email, "admin@test.local");
+  assert.equal("passwordHash" in registered.user, false);
+  const persistedAccount = JSON.parse(await readFile(dataFile, "utf8")).users.find((user) => user.email === "admin@test.local");
+  assert.match(persistedAccount.passwordHash, /^scrypt\$16384\$/);
+  const { token } = registered;
   const authorization = { Authorization: `Bearer ${token}` };
+
+  const usersResponse = await fetch(`${baseUrl}/users`, { headers: authorization });
+  assert.equal(usersResponse.status, 200);
+  assert.equal((await usersResponse.json()).some((user) => "passwordHash" in user), false);
 
   const listResponse = await fetch(`${baseUrl}/connections`, { headers: authorization });
   assert.equal(listResponse.status, 200);
@@ -109,14 +118,19 @@ test("resource routes validate input, perform CRUD, and return centralized error
 });
 
 test("resource routes reject missing or invalid session tokens", async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), "gem-access-auth-"));
+  const dataFile = join(directory, "db.json");
+  const fixture = JSON.parse(await readFile(new URL("../data/db.json", import.meta.url), "utf8"));
+  await writeFile(dataFile, JSON.stringify(fixture), "utf8");
   const server = createApp({
-    store: createJsonStore(),
-    auth: { email: "admin@test.local", password: "test-password" }
+    store: createJsonStore(dataFile),
+    auth: { jwtSecret: "test-secret-with-more-than-thirty-two-bytes" }
   }).listen(0);
   await once(server, "listening");
   t.after(async () => {
     server.close();
     await once(server, "close");
+    await rm(directory, { recursive: true, force: true });
   });
 
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
@@ -132,12 +146,40 @@ test("resource routes reject missing or invalid session tokens", async (t) => {
   assert.equal(invalidLogin.status, 401);
   assert.equal((await invalidLogin.json()).error.code, "INVALID_CREDENTIALS");
 
+  const weakRegistration = await fetch(`${baseUrl}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Admin Teste", email: "admin@test.local", password: "short" })
+  });
+  assert.equal(weakRegistration.status, 400);
+
   const validLogin = await fetch(`${baseUrl}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email: "admin@test.local", password: "test-password" })
   });
-  const { token } = await validLogin.json();
+  assert.equal(validLogin.status, 401);
+
+  const registration = await fetch(`${baseUrl}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Admin Teste", email: "admin@test.local", password: "test-password" })
+  });
+  assert.equal(registration.status, 201);
+  const duplicateRegistration = await fetch(`${baseUrl}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "Admin Teste", email: "ADMIN@test.local", password: "test-password" })
+  });
+  assert.equal(duplicateRegistration.status, 409);
+
+  const successfulLogin = await fetch(`${baseUrl}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "admin@test.local", password: "test-password" })
+  });
+  assert.equal(successfulLogin.status, 200);
+  const { token } = await successfulLogin.json();
   const authenticated = await fetch(`${baseUrl}/connections`, {
     headers: { Authorization: `Bearer ${token}` }
   });

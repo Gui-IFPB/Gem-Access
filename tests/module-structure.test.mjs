@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { escapeHtml } from '../assets/js/utils.js';
-import { apiRequest, API_BASE_URL, getAuthToken, login } from '../assets/js/api.js';
+import { apiRequest, API_BASE_URL, getAuthToken, login, register } from '../assets/js/api.js';
 
 test('utils exports escapeHtml', () => {
   assert.equal(escapeHtml('<script>alert(1)</script>'), '&lt;script&gt;alert(1)&lt;/script&gt;');
@@ -48,6 +48,34 @@ test('apiRequest accepts empty DELETE responses and rejects HTTP errors', async 
     await assert.rejects(apiRequest('connections', { method: 'POST' }), /500/);
   } finally {
     globalThis.fetch = originalFetch;
+  }
+});
+
+test('register sends public signup data and stores the returned JWT', async () => {
+  const originalFetch = globalThis.fetch;
+  const storageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+  const values = new Map();
+  Object.defineProperty(globalThis, 'sessionStorage', {
+    configurable: true,
+    value: { getItem: (key) => values.get(key) || null, setItem: (key, value) => values.set(key, value) }
+  });
+  let request;
+  globalThis.fetch = async (url, options) => {
+    request = { url, options };
+    return { ok: true, status: 201, json: async () => ({ token: 'signed-jwt', user: { email: 'new@test.local' } }) };
+  };
+
+  try {
+    const user = await register('New User', 'new@test.local', 'long-password');
+    assert.equal(user.email, 'new@test.local');
+    assert.equal(request.url, `${API_BASE_URL}/auth/register`);
+    assert.equal(request.options.headers.get('Authorization'), null);
+    assert.equal(JSON.parse(request.options.body).password, 'long-password');
+    assert.equal(getAuthToken(), 'signed-jwt');
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (storageDescriptor) Object.defineProperty(globalThis, 'sessionStorage', storageDescriptor);
+    else delete globalThis.sessionStorage;
   }
 });
 

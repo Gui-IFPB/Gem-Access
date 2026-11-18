@@ -4,6 +4,12 @@ import { HttpError } from "../errors/HttpError.js";
 
 const resourceNames = ["connections", "servers", "users", "alerts", "network"];
 
+const toPublicRecord = (resource, record) => {
+  if (resource !== "users") return record;
+  const { passwordHash: _passwordHash, ...user } = record;
+  return user;
+};
+
 export function createJsonStore(filePath = resolve(process.cwd(), "data/db.json")) {
   let operationQueue = Promise.resolve();
 
@@ -43,7 +49,8 @@ export function createJsonStore(filePath = resolve(process.cwd(), "data/db.json"
 
   return {
     list(resource) {
-      return runExclusive(async () => getResource(await readDatabase(), resource));
+      return runExclusive(async () => getResource(await readDatabase(), resource)
+        .map((record) => toPublicRecord(resource, record)));
     },
 
     findById(resource, id) {
@@ -53,7 +60,7 @@ export function createJsonStore(filePath = resolve(process.cwd(), "data/db.json"
         if (!record) {
           throw new HttpError(404, "NOT_FOUND", "Registro não encontrado.");
         }
-        return record;
+        return toPublicRecord(resource, record);
       });
     },
 
@@ -65,7 +72,7 @@ export function createJsonStore(filePath = resolve(process.cwd(), "data/db.json"
         const record = { ...values, id: nextId };
         records.push(record);
         await writeDatabase(database);
-        return record;
+        return toPublicRecord(resource, record);
       });
     },
 
@@ -83,7 +90,7 @@ export function createJsonStore(filePath = resolve(process.cwd(), "data/db.json"
           : { ...records[index], ...values, id: records[index].id };
         records[index] = record;
         await writeDatabase(database);
-        return record;
+        return toPublicRecord(resource, record);
       });
     },
 
@@ -98,7 +105,29 @@ export function createJsonStore(filePath = resolve(process.cwd(), "data/db.json"
 
         const [record] = records.splice(index, 1);
         await writeDatabase(database);
-        return record;
+        return toPublicRecord(resource, record);
+      });
+    },
+
+    findUserCredentialsByEmail(email) {
+      return runExclusive(async () => {
+        const users = getResource(await readDatabase(), "users");
+        return users.find((user) => user.email.toLowerCase() === email.toLowerCase()) ?? null;
+      });
+    },
+
+    createUserAccount({ name, email, passwordHash }) {
+      return runExclusive(async () => {
+        const database = await readDatabase();
+        const users = getResource(database, "users");
+        if (users.some((user) => user.email.toLowerCase() === email.toLowerCase())) {
+          throw new HttpError(409, "DUPLICATE_RECORD", "Já existe uma conta com esse e-mail.");
+        }
+        const id = users.reduce((maximum, user) => Math.max(maximum, Number(user.id) || 0), 0) + 1;
+        const account = { id, name, email, role: "Usuário", lastConnection: "", passwordHash };
+        users.push(account);
+        await writeDatabase(database);
+        return toPublicRecord("users", account);
       });
     }
   };

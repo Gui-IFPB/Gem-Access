@@ -12,6 +12,7 @@ model User {
   email          String       @unique
   role           String
   lastConnection String       @default("")
+  passwordHash   String?
   connections    Connection[]
 
   @@map("users")

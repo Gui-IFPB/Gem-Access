@@ -75,6 +75,19 @@ export async function login(email, password) {
   return result.user;
 }
 
+export async function register(name, email, password) {
+  const result = await apiRequest("auth/register", {
+    method: "POST",
+    body: { name, email, password },
+    authenticated: false
+  });
+  if (typeof result?.token !== "string" || !result.token) {
+    throw new ApiError("A API não retornou uma sessão válida.");
+  }
+  globalThis.sessionStorage?.setItem("gem-access-token", result.token);
+  return result.user;
+}
+
 export async function logout() {
   try {
     if (getAuthToken()) {

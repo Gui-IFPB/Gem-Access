@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import test from "node:test";
 import { createPrismaStore } from "../server/models/prismaStore.js";
 import { createPrismaClient } from "../server/models/prismaClient.js";
+import { verifyPassword } from "../server/security/passwords.js";
 import { seedDatabase } from "../server/seed.js";
 
 const execFile = promisify(execFileCallback);
@@ -44,6 +45,10 @@ test("Prisma store applies migrations, seeds data, and enforces persistence cons
 
   assert.equal(await seedDatabase(client), true);
   assert.equal(await seedDatabase(client), false);
+  const seededAdmin = await client.user.findUnique({ where: { email: "admin@gemaccess.local" } });
+  assert.match(seededAdmin.passwordHash, /^scrypt\$16384\$/);
+  assert.equal(await verifyPassword("gemaccess123", seededAdmin.passwordHash), true);
+  assert.equal("passwordHash" in (await store.list("users"))[0], false);
   const seededConnections = await store.list("connections");
   assert.equal(seededConnections.length, 2);
   assert.equal(seededConnections[0].user, "Guilherme");

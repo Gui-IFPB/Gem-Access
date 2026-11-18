@@ -12,6 +12,10 @@ const resourceDelegates = {
 const connectionInclude = { user: { select: { name: true } } };
 
 function toApiRecord(resource, record) {
+  if (resource === "users") {
+    const { passwordHash: _passwordHash, ...user } = record;
+    return user;
+  }
   if (resource !== "connections") return record;
 
   const {
@@ -159,6 +163,19 @@ export function createPrismaStore({ client = createPrismaClient() } = {}) {
         const record = await delegateFor(resource).delete({ where: { id: recordId(id) } });
         return toApiRecord(resource, record);
       });
+    },
+
+    findUserCredentialsByEmail(email) {
+      return run(() => client.user.findUnique({
+        where: { email },
+        select: { id: true, name: true, email: true, role: true, passwordHash: true }
+      }));
+    },
+
+    createUserAccount({ name, email, passwordHash }) {
+      return run(async () => toApiRecord("users", await client.user.create({
+        data: { name, email, role: "Usuário", passwordHash }
+      })));
     },
 
     disconnect() {

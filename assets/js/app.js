@@ -1,4 +1,4 @@
-import { apiRequest, clearAuthToken, getAuthToken, loadResource, login, logout } from './api.js';
+import { apiRequest, clearAuthToken, getAuthToken, loadResource, login, logout, register } from './api.js';
 import { renderAlerts, renderBreakdown, renderDashboard, renderLocations, renderReports, renderUsers, renderConnectionRows, updateAlertsBadge } from './renderers.js';
 import { escapeHtml, showTableMessage } from './utils.js';
 
@@ -235,23 +235,44 @@ function initLoginForm() {
     return;
   }
 
+  const name = document.getElementById("name");
+  const modeToggle = document.getElementById("auth-mode-toggle");
+  const submit = form.querySelector('button[type="submit"]');
+  const setMode = (mode) => {
+    const isRegister = mode === "register";
+    form.dataset.mode = mode;
+    name.hidden = !isRegister;
+    name.required = isRegister;
+    document.getElementById("password").autocomplete = isRegister ? "new-password" : "current-password";
+    submit.textContent = isRegister ? "Criar conta" : "Entrar";
+    modeToggle.textContent = isRegister ? "Já tenho uma conta" : "Criar conta";
+    document.getElementById("login-message").textContent = "";
+  };
+  modeToggle.addEventListener("click", () => setMode(form.dataset.mode === "register" ? "login" : "register"));
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    const nameInput = document.getElementById("name");
     const email = document.getElementById("email");
     const password = document.getElementById("password");
     const message = document.getElementById("login-message");
-    const submit = form.querySelector('button[type="submit"]');
+    const isRegister = form.dataset.mode === "register";
 
-    if (!email?.value.trim() || !password?.value) {
-      message.textContent = "Informe o e-mail e a senha para entrar.";
+    if (!email?.value.trim() || !password?.value || (isRegister && !nameInput?.value.trim())) {
+      message.textContent = isRegister ? "Informe seu nome, e-mail e senha." : "Informe o e-mail e a senha para entrar.";
+      return;
+    }
+    if (isRegister && password.value.length < 10) {
+      message.textContent = "A senha deve ter pelo menos 10 caracteres.";
       return;
     }
 
     submit.disabled = true;
     message.classList.remove("form-message-error");
-    message.textContent = "Validando acesso...";
+    message.textContent = isRegister ? "Criando sua conta..." : "Validando acesso...";
     try {
-      await login(email.value.trim(), password.value);
+      if (isRegister) await register(nameInput.value.trim(), email.value.trim(), password.value);
+      else await login(email.value.trim(), password.value);
       window.location.assign("dashboard.html");
     } catch (error) {
       message.classList.add("form-message-error");
@@ -260,6 +281,7 @@ function initLoginForm() {
       submit.disabled = false;
     }
   });
+  setMode("login");
 }
 
 function initLogout() {
