@@ -35,6 +35,15 @@ async function loadPage() {
       return;
     }
 
+    if (page === "alerts") {
+      initAlertsPage();
+      const alerts = await loadResource("alerts");
+      renderAlerts(alerts);
+      updateAlertsBadge(alerts);
+      document.getElementById("api-error")?.remove();
+      return;
+    }
+
     const resourcesMap = {
       dashboard: ["connections", "alerts", "network"],
       users: ["users", "connections", "alerts"],
@@ -73,6 +82,105 @@ async function loadPage() {
     if (locationStatus) locationStatus.textContent = message;
     if (badge) badge.textContent = "!";
   }
+}
+
+function initAlertsPage() {
+  const form = document.getElementById("alert-form");
+  const list = document.getElementById("alert-list");
+  const message = document.getElementById("alert-message");
+  if (!form || !list || !message) return;
+  if (form.dataset.initialized === "true") return;
+  form.dataset.initialized = "true";
+
+  let alerts = [];
+  let editingAlertId = null;
+
+  const setMessage = (text, isError = false) => {
+    message.textContent = text;
+    message.classList.toggle("form-message-error", isError);
+  };
+
+  const resetForm = () => {
+    form.reset();
+    editingAlertId = null;
+    document.getElementById("alert-form-title").textContent = "Cadastrar alerta";
+    document.getElementById("alert-submit").textContent = "Cadastrar alerta";
+    setMessage("");
+  };
+
+  const loadAlerts = async () => {
+    try {
+      alerts = await loadResource("alerts");
+      renderAlerts(alerts);
+      updateAlertsBadge(alerts);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Não foi possível carregar os alertas.", true);
+    }
+  };
+
+  document.getElementById("alert-cancel").addEventListener("click", resetForm);
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const body = {
+      title: document.getElementById("alert-title").value.trim(),
+      description: document.getElementById("alert-description").value.trim(),
+      severity: document.getElementById("alert-severity").value,
+      time: document.getElementById("alert-time").value.trim(),
+      status: document.getElementById("alert-status").value
+    };
+
+    try {
+      if (editingAlertId === null) {
+        await apiRequest("alerts", { method: "POST", body });
+        resetForm();
+        setMessage("Alerta cadastrado.");
+      } else {
+        await apiRequest(`alerts/${encodeURIComponent(editingAlertId)}`, { method: "PATCH", body });
+        resetForm();
+        setMessage("Alerta atualizado.");
+      }
+      await loadAlerts();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Não foi possível salvar o alerta.", true);
+    }
+  });
+
+  list.addEventListener("click", async (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const button = target?.closest("button[data-alert-action]");
+    if (!button) return;
+
+    const alert = alerts.find((item) => String(item.id) === button.dataset.id);
+    if (!alert) return;
+
+    if (button.dataset.alertAction === "edit") {
+      editingAlertId = alert.id;
+      document.getElementById("alert-title").value = alert.title || "";
+      document.getElementById("alert-description").value = alert.description || "";
+      document.getElementById("alert-severity").value = alert.severity || "medium";
+      document.getElementById("alert-time").value = alert.time || "";
+      document.getElementById("alert-status").value = alert.status || "active";
+      document.getElementById("alert-form-title").textContent = "Editar alerta";
+      document.getElementById("alert-submit").textContent = "Salvar alterações";
+      setMessage("");
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    if (button.dataset.alertAction === "delete" && window.confirm(`Excluir o alerta "${alert.title}"?`)) {
+      try {
+        await apiRequest(`alerts/${encodeURIComponent(alert.id)}`, { method: "DELETE" });
+        if (editingAlertId === alert.id) resetForm();
+        setMessage("Alerta excluído.");
+        await loadAlerts();
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "Não foi possível excluir o alerta.", true);
+      }
+    }
+  });
+
+  loadAlerts();
 }
 
 function initConnectionsPage() {

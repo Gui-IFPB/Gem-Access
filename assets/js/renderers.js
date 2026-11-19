@@ -114,7 +114,7 @@ export function renderAlerts(alerts) {
   list.innerHTML = alerts.slice().reverse().map((alert) => {
     const severity = ["critical", "high", "medium"].includes(alert.severity) ? alert.severity : "medium";
     const labels = { critical: "CRÍTICO", high: "ALTO", medium: "MÉDIO" };
-    return `<article class="alert-card ${severity}"><div class="alert-icon">!</div><div><span class="alert-level">${labels[severity]}</span><h2>${escapeHtml(alert.title)}</h2><p>${escapeHtml(alert.description)}</p><small>${escapeHtml(alert.time || "")}</small> ${alert.status === "active" ? "" : statusTag("resolved")}</div></article>`;
+    return `<article class="alert-card ${severity}"><div class="alert-icon">!</div><div><span class="alert-level">${labels[severity]}</span><h2>${escapeHtml(alert.title)}</h2><p>${escapeHtml(alert.description)}</p><small>${escapeHtml(alert.time || "")}</small> ${alert.status === "active" ? "" : statusTag("resolved")}<div class="row-actions"><button type="button" class="btn btn-small" data-alert-action="edit" data-id="${escapeHtml(String(alert.id))}">Editar</button><button type="button" class="btn btn-small btn-danger" data-alert-action="delete" data-id="${escapeHtml(String(alert.id))}">Excluir</button></div></div></article>`;
   }).join("");
 }
 

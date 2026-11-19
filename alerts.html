@@ -9,6 +9,32 @@
   <nav><a href="dashboard.html">Dashboard</a><a href="connections.html">Conexões</a><a href="locations.html">Localização</a><a href="users.html">Usuários</a><a class="active" href="alerts.html">Alertas <span class="badge" id="alerts-badge">0</span></a><a href="reports.html">Relatórios</a></nav>
   <div class="sidebar-bottom"><a href="#">Configurações</a><a href="index.html">Sair</a></div></aside>
   <main class="content"><header class="topbar"><div><p class="eyebrow">MONITORAMENTO</p><h1>Alertas</h1><p class="subtitle">Eventos registrados no sistema.</p></div><div class="user-chip"><span class="status-dot"></span> Administrador</div></header>
+  <section class="panel alert-editor" aria-labelledby="alert-form-title">
+    <div class="panel-header"><div><h2 id="alert-form-title">Cadastrar alerta</h2><p>Registre um evento de monitoramento da infraestrutura.</p></div></div>
+    <form id="alert-form" class="alert-form">
+      <label>Título<input id="alert-title" name="title" maxlength="160" required></label>
+      <label>Severidade
+        <select id="alert-severity" name="severity" required>
+          <option value="critical">Crítica</option>
+          <option value="high">Alta</option>
+          <option value="medium" selected>Média</option>
+        </select>
+      </label>
+      <label>Horário<input id="alert-time" name="time" maxlength="120" placeholder="Hoje, 09:35" required></label>
+      <label>Status
+        <select id="alert-status" name="status" required>
+          <option value="active">Ativo</option>
+          <option value="resolved">Resolvido</option>
+        </select>
+      </label>
+      <label class="alert-description">Descrição<textarea id="alert-description" name="description" maxlength="1000" required></textarea></label>
+      <div class="alert-form-actions">
+        <button id="alert-submit" type="submit" class="btn btn-primary">Cadastrar alerta</button>
+        <button id="alert-cancel" type="button" class="btn btn-secondary">Cancelar edição</button>
+      </div>
+      <p id="alert-message" class="form-message" role="status" aria-live="polite"></p>
+    </form>
+  </section>
   <section class="alert-list" id="alert-list"><p>Carregando alertas...</p></section></main></div>
   <script type="module" src="assets/js/app.js"></script>
 </body></html>
