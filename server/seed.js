@@ -57,12 +57,19 @@ export async function seedDatabase(client = prisma) {
     }
 
     const adminUser = await transaction.user.findUnique({ where: { email: adminEmail } });
-    if (adminUser && !adminUser.passwordHash) {
+    if (adminUser) {
       await transaction.user.update({ where: { id: adminUser.id }, data: { passwordHash } });
     } else if (!adminUser) {
       await transaction.user.create({
         data: { name: "Administrador", email: adminEmail, role: "Administrador", passwordHash }
       });
+    }
+
+    const missingServer = await transaction.server.findUnique({ where: { id: 1 } });
+    if (!missingServer) {
+      const fixture = JSON.parse(await readFile(resolve(process.cwd(), "data/db.json"), "utf8"));
+      const server = fixture.servers.find((item) => item.id === 1);
+      if (server) await transaction.server.create({ data: server });
     }
   });
   return isEmpty;
