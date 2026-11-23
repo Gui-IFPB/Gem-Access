@@ -47,6 +47,11 @@ export function createJsonStore(filePath = resolve(process.cwd(), "data/db.json"
     }
   };
 
+  const revokedTokens = async () => {
+    const database = await readDatabase();
+    return Array.isArray(database.revokedTokens) ? database.revokedTokens : [];
+  };
+
   return {
     list(resource) {
       return runExclusive(async () => getResource(await readDatabase(), resource)
@@ -128,6 +133,24 @@ export function createJsonStore(filePath = resolve(process.cwd(), "data/db.json"
         users.push(account);
         await writeDatabase(database);
         return toPublicRecord("users", account);
+      });
+    },
+
+    isTokenRevoked(jti) {
+      return runExclusive(async () => (await revokedTokens()).some((token) => token.jti === jti
+        && new Date(token.expiresAt).getTime() > Date.now()));
+    },
+
+    revokeToken(jti, expiresAt) {
+      return runExclusive(async () => {
+        const database = await readDatabase();
+        if (!Array.isArray(database.revokedTokens)) database.revokedTokens = [];
+        database.revokedTokens = database.revokedTokens.filter((token) =>
+          new Date(token.expiresAt).getTime() > Date.now());
+        if (!database.revokedTokens.some((token) => token.jti === jti)) {
+          database.revokedTokens.push({ jti, expiresAt: expiresAt.toISOString() });
+        }
+        await writeDatabase(database);
       });
     }
   };

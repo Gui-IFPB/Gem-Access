@@ -36,7 +36,11 @@ export function createApp({ store = createPrismaStore(), auth = {} } = {}) {
   app.use("/auth", authRoutes.router);
 
   for (const resource of resources) {
-    app.use(`/${resource}`, authRoutes.authenticate, createResourceRouter(resource, store));
+    app.use(
+      `/${resource}`,
+      authRoutes.authenticate,
+      createResourceRouter(resource, store, authRoutes.requireRole)
+    );
   }
 
   app.use(notFound);

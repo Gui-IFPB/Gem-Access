@@ -178,6 +178,24 @@ export function createPrismaStore({ client = createPrismaClient() } = {}) {
       })));
     },
 
+    isTokenRevoked(jti) {
+      return run(async () => {
+        await client.revokedToken.deleteMany({ where: { expiresAt: { lte: new Date() } } });
+        return Boolean(await client.revokedToken.findUnique({ where: { jti } }));
+      });
+    },
+
+    revokeToken(jti, expiresAt) {
+      return run(async () => {
+        await client.revokedToken.deleteMany({ where: { expiresAt: { lte: new Date() } } });
+        await client.revokedToken.upsert({
+          where: { jti },
+          update: { expiresAt },
+          create: { jti, expiresAt }
+        });
+      });
+    },
+
     disconnect() {
       return client.$disconnect();
     }

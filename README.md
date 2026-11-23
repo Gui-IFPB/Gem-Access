@@ -41,6 +41,7 @@ O GEM Access não substitui essas ferramentas nem administra servidores VPN nest
 1. Instale as dependências, aplique a migration e carregue os dados demonstrativos:
 
    ```bash
+   cp .env.example .env
    npm install
    npm run db:setup
    npm run dev
@@ -74,9 +75,9 @@ As migrations SQL versionadas ficam em `prisma/migrations/`. `npm run db:migrate
 
 O `prismaStore` integra o client às operações CRUD já expostas pela API. `P2002` (valor único duplicado) vira `409 DUPLICATE_RECORD`; `P2003` (integridade referencial) vira `409 RELATION_CONFLICT`; registro ausente vira `404 NOT_FOUND`. Outros erros do banco são encapsulados como `500 PERSISTENCE_ERROR`, sem expor detalhes internos. A validação de entrada e o middleware central continuam responsáveis pelos erros HTTP padronizados.
 
-Os recursos `connections`, `servers`, `users`, `alerts` e `network` oferecem `GET`, `POST`, `PUT`, `PATCH` e `DELETE`. Crie uma conta em `/auth/register` com nome, e-mail e senha de 10 a 128 caracteres, ou entre em `/auth/login`. O seed também cria a conta demonstrativa `admin@gemaccess.local` / `gemaccess123`. Senhas são derivadas com `scrypt`, salt aleatório e comparação em tempo constante; o hash nunca é retornado pelas rotas de usuários. O login e o cadastro retornam JWT HS256 com validade de oito horas, enviado às rotas protegidas no cabeçalho `Authorization: Bearer <token>`. O logout bloqueia o identificador do token até seu vencimento na instância atual, e o navegador mantém o token em `sessionStorage`.
+Os recursos das entidades são protegidos por login. Contas comuns podem consultar dados, enquanto contas Administrador podem criar, alterar e excluir registros. Senhas usam scrypt e o login retorna um JWT; o logout registra o identificador revogado no banco até o vencimento do token.
 
-Em desenvolvimento, se `GEM_ACCESS_JWT_SECRET` não estiver definido, o servidor gera uma chave aleatória para o processo; os tokens deixam de valer após reiniciar. Em produção, configure `GEM_ACCESS_JWT_SECRET` com pelo menos 32 bytes e defina `GEM_ACCESS_ADMIN_EMAIL` / `GEM_ACCESS_ADMIN_PASSWORD` antes da primeira carga do seed. O logout usa uma lista de revogação em memória e, portanto, esta implementação é adequada para execução local ou instância única; uma implantação com várias instâncias deve persistir essa lista em um armazenamento compartilhado.
+Em desenvolvimento, se `GEM_ACCESS_JWT_SECRET` não estiver definido, o servidor gera uma chave aleatória para o processo; os tokens deixam de valer após reiniciar. Em produção, configure `GEM_ACCESS_JWT_SECRET` com pelo menos 32 bytes e defina `GEM_ACCESS_ADMIN_EMAIL` / `GEM_ACCESS_ADMIN_PASSWORD` antes da primeira carga do seed. O logout persiste os identificadores revogados na tabela `revoked_tokens`; os registros vencidos são removidos automaticamente.
 
 ## Páginas / Telas da Aplicação (GitHub Pages)
 

@@ -36,8 +36,19 @@ test("resource routes validate input, perform CRUD, and return centralized error
   assert.equal("passwordHash" in registered.user, false);
   const persistedAccount = JSON.parse(await readFile(dataFile, "utf8")).users.find((user) => user.email === "admin@test.local");
   assert.match(persistedAccount.passwordHash, /^scrypt\$16384\$/);
-  const { token } = registered;
-  const authorization = { Authorization: `Bearer ${token}` };
+  persistedAccount.role = "Administrador";
+  const database = JSON.parse(await readFile(dataFile, "utf8"));
+  const accountIndex = database.users.findIndex((user) => user.email === "admin@test.local");
+  database.users[accountIndex].role = "Administrador";
+  await writeFile(dataFile, JSON.stringify(database, null, 2), "utf8");
+  const loginResponse = await fetch(`${baseUrl}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "admin@test.local", password: "test-password" })
+  });
+  assert.equal(loginResponse.status, 200);
+  const { token } = await loginResponse.json();
+  const authorization = { Authorization: "Bearer " + token };
 
   const usersResponse = await fetch(`${baseUrl}/users`, { headers: authorization });
   assert.equal(usersResponse.status, 200);
@@ -181,17 +192,34 @@ test("resource routes reject missing or invalid session tokens", async (t) => {
   assert.equal(successfulLogin.status, 200);
   const { token } = await successfulLogin.json();
   const authenticated = await fetch(`${baseUrl}/connections`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: "Bearer " + token }
   });
   assert.equal(authenticated.status, 200);
 
+  const blockedCreate = await fetch(`${baseUrl}/alerts`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token
+    },
+    body: JSON.stringify({
+      severity: "high",
+      title: "Alerta sem permissão",
+      description: "Deve ser bloqueado",
+      time: "Hoje",
+      status: "active"
+    })
+  });
+  assert.equal(blockedCreate.status, 403);
+  assert.equal((await blockedCreate.json()).error.code, "FORBIDDEN");
+
   const logout = await fetch(`${baseUrl}/auth/logout`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: "Bearer " + token }
   });
   assert.equal(logout.status, 204);
   const expiredSession = await fetch(`${baseUrl}/connections`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: "Bearer " + token }
   });
   assert.equal(expiredSession.status, 401);
 });

@@ -15,6 +15,22 @@ export function getAuthToken() {
 
 export function clearAuthToken() {
   globalThis.sessionStorage?.removeItem("gem-access-token");
+  globalThis.sessionStorage?.removeItem("gem-access-user");
+}
+
+export function getAuthUser() {
+  const serialized = globalThis.sessionStorage?.getItem("gem-access-user");
+  if (!serialized) return null;
+  try {
+    return JSON.parse(serialized);
+  } catch {
+    clearAuthToken();
+    return null;
+  }
+}
+
+export function isAdministrator() {
+  return getAuthUser()?.role === "Administrador";
 }
 
 export async function apiRequest(resource, options = {}) {
@@ -72,6 +88,7 @@ export async function login(email, password) {
     throw new ApiError("A API não retornou uma sessão válida.");
   }
   globalThis.sessionStorage?.setItem("gem-access-token", result.token);
+  globalThis.sessionStorage?.setItem("gem-access-user", JSON.stringify(result.user));
   return result.user;
 }
 
@@ -85,6 +102,7 @@ export async function register(name, email, password) {
     throw new ApiError("A API não retornou uma sessão válida.");
   }
   globalThis.sessionStorage?.setItem("gem-access-token", result.token);
+  globalThis.sessionStorage?.setItem("gem-access-user", JSON.stringify(result.user));
   return result.user;
 }
 

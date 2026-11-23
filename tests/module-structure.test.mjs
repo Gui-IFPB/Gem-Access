@@ -2,7 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { escapeHtml } from '../assets/js/utils.js';
-import { apiRequest, API_BASE_URL, getAuthToken, login, register } from '../assets/js/api.js';
+import {
+  API_BASE_URL,
+  apiRequest,
+  getAuthToken,
+  getAuthUser,
+  isAdministrator,
+  login,
+  register
+} from '../assets/js/api.js';
 
 test('utils exports escapeHtml', () => {
   assert.equal(escapeHtml('<script>alert(1)</script>'), '&lt;script&gt;alert(1)&lt;/script&gt;');
@@ -57,7 +65,11 @@ test('register sends public signup data and stores the returned JWT', async () =
   const values = new Map();
   Object.defineProperty(globalThis, 'sessionStorage', {
     configurable: true,
-    value: { getItem: (key) => values.get(key) || null, setItem: (key, value) => values.set(key, value) }
+    value: {
+      getItem: (key) => values.get(key) || null,
+      setItem: (key, value) => values.set(key, value),
+      removeItem: (key) => values.delete(key)
+    }
   });
   let request;
   globalThis.fetch = async (url, options) => {
@@ -79,7 +91,7 @@ test('register sends public signup data and stores the returned JWT', async () =
   }
 });
 
-test('login stores the token and authenticated API requests send it', async () => {
+test('login stores the token and sends it in authenticated requests', async () => {
   const originalFetch = globalThis.fetch;
   const storageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
   const values = new Map();
@@ -95,7 +107,7 @@ test('login stores the token and authenticated API requests send it', async () =
   globalThis.fetch = async (url, options) => {
     requests.push({ url, options });
     if (url.endsWith('/auth/login')) {
-      return { ok: true, status: 200, json: async () => ({ token: 'session-token', user: { email: 'admin@test.local' } }) };
+      return { ok: true, status: 200, json: async () => ({ token: 'session-token', user: { email: 'admin@test.local', role: 'Administrador' } }) };
     }
     if (url.endsWith('/expired')) {
       return {
@@ -111,6 +123,8 @@ test('login stores the token and authenticated API requests send it', async () =
     await login('admin@test.local', 'secret');
     await apiRequest('connections');
     assert.equal(getAuthToken(), 'session-token');
+    assert.equal(getAuthUser()?.role, 'Administrador');
+    assert.equal(isAdministrator(), true);
     assert.equal(requests[0].options.headers.get('Authorization'), null);
     assert.equal(requests[1].options.headers.get('Authorization'), 'Bearer session-token');
     await assert.rejects(apiRequest('expired'), (error) => {
@@ -121,10 +135,7 @@ test('login stores the token and authenticated API requests send it', async () =
     assert.equal(getAuthToken(), '');
   } finally {
     globalThis.fetch = originalFetch;
-    if (storageDescriptor) {
-      Object.defineProperty(globalThis, 'sessionStorage', storageDescriptor);
-    } else {
-      delete globalThis.sessionStorage;
-    }
+    if (storageDescriptor) Object.defineProperty(globalThis, 'sessionStorage', storageDescriptor);
+    else delete globalThis.sessionStorage;
   }
 });

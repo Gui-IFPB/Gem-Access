@@ -1,8 +1,23 @@
-import { apiRequest, clearAuthToken, getAuthToken, loadResource, login, logout, register } from './api.js';
+import { apiRequest, clearAuthToken, getAuthToken, getAuthUser, isAdministrator, loadResource, login, logout, register } from './api.js';
 import { renderAlerts, renderBreakdown, renderDashboard, renderLocations, renderReports, renderUsers, renderConnectionRows, updateAlertsBadge } from './renderers.js';
 import { escapeHtml, showTableMessage } from './utils.js';
 
 const page = document.body?.dataset?.page;
+
+function applyAdministratorUi() {
+  if (isAdministrator()) return;
+  document.querySelectorAll(".alert-form, #connection-form").forEach((form) => {
+    form.hidden = true;
+  });
+  document.querySelectorAll(".row-actions").forEach((actions) => {
+    actions.querySelectorAll("button").forEach((button) => {
+      button.hidden = true;
+    });
+  });
+  document.querySelectorAll("[data-action='edit'], [data-action='delete'], [data-alert-action='edit'], [data-alert-action='delete']").forEach((button) => {
+    button.hidden = true;
+  });
+}
 
 function showApiError(error) {
   const content = document.querySelector(".content");
@@ -25,6 +40,13 @@ async function loadPage() {
     window.location.replace("index.html");
     return;
   }
+
+  const user = getAuthUser();
+  const userChip = document.querySelector(".user-chip");
+  if (userChip && user) {
+    userChip.lastChild.textContent = ` ${user.name || user.role || "Usuário"}`;
+  }
+  applyAdministratorUi();
 
   try {
     if (page === "connections") {
@@ -88,6 +110,7 @@ function initAlertsPage() {
   const form = document.getElementById("alert-form");
   const list = document.getElementById("alert-list");
   const message = document.getElementById("alert-message");
+  const submit = document.getElementById("alert-submit");
   if (!form || !list || !message) return;
   if (form.dataset.initialized === "true") return;
   form.dataset.initialized = "true";
@@ -122,6 +145,7 @@ function initAlertsPage() {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    submit.disabled = true;
     const body = {
       title: document.getElementById("alert-title").value.trim(),
       description: document.getElementById("alert-description").value.trim(),
@@ -143,6 +167,8 @@ function initAlertsPage() {
       await loadAlerts();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível salvar o alerta.", true);
+    } finally {
+      submit.disabled = false;
     }
   });
 
@@ -189,6 +215,7 @@ function initConnectionsPage() {
   const statusFilter = document.getElementById("status-filter");
   const form = document.getElementById("connection-form");
   const message = document.getElementById("connection-message");
+  const submit = document.getElementById("connection-submit");
 
   if (!table || !field || !statusFilter || !form || !message) return;
 
@@ -250,6 +277,7 @@ function initConnectionsPage() {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    submit.disabled = true;
     const body = {
       user: document.getElementById("connection-user").value.trim(),
       sourceIp: document.getElementById("connection-source-ip").value.trim(),
@@ -276,6 +304,8 @@ function initConnectionsPage() {
     } catch (error) {
       console.error("Erro ao salvar conexão:", error);
       setMessage(error instanceof Error ? error.message : "Não foi possível salvar a conexão.", true);
+    } finally {
+      submit.disabled = false;
     }
   });
 

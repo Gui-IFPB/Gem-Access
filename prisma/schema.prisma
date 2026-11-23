@@ -72,3 +72,10 @@ model NetworkComponent {
 
   @@map("network")
 }
+
+model RevokedToken {
+  jti       String   @id
+  expiresAt DateTime
+
+  @@map("revoked_tokens")
+}

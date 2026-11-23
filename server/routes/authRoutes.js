@@ -26,7 +26,6 @@ export function createAuthRoutes({ store, jwtSecret } = {}) {
 
   const secret = new TextEncoder().encode(configuredSecret || randomBytes(32).toString("base64url"));
   const router = Router();
-  const revokedTokens = new Map();
 
   const issueToken = (user) => new SignJWT({ email: user.email, role: user.role })
     .setProtectedHeader({ alg: "HS256" })
@@ -48,14 +47,12 @@ export function createAuthRoutes({ store, jwtSecret } = {}) {
         throw new Error("Invalid token claims.");
       }
 
-      for (const [jti, expiresAt] of revokedTokens) {
-        if (expiresAt <= Date.now()) revokedTokens.delete(jti);
-      }
-      if (revokedTokens.has(payload.jti)) throw new Error("Revoked token.");
+      if (await store.isTokenRevoked(payload.jti)) throw new Error("Revoked token.");
 
       request.authTokenId = payload.jti;
       request.authTokenExpiresAt = Number(payload.exp) * 1000;
       request.authUserId = Number(payload.sub);
+      request.authRole = typeof payload.role === "string" ? payload.role : "";
       return next();
     } catch {
       return next(new HttpError(401, "UNAUTHORIZED", "Sua sessão expirou. Entre novamente."));
@@ -93,10 +90,17 @@ export function createAuthRoutes({ store, jwtSecret } = {}) {
     return response.json({ token: await issueToken(user), user: publicUser(user) });
   }));
 
-  router.post("/logout", authenticate, (request, response) => {
-    revokedTokens.set(request.authTokenId, request.authTokenExpiresAt);
+  router.post("/logout", authenticate, asyncHandler(async (request, response) => {
+    await store.revokeToken(request.authTokenId, new Date(request.authTokenExpiresAt));
     return response.status(204).end();
-  });
+  }));
 
-  return { router, authenticate };
+  const requireRole = (...allowedRoles) => (request, _response, next) => {
+    if (!allowedRoles.includes(request.authRole)) {
+      return next(new HttpError(403, "FORBIDDEN", "Você não tem permissão para executar esta operação."));
+    }
+    return next();
+  };
+
+  return { router, authenticate, requireRole };
 }
