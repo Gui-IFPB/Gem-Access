@@ -1,0 +1,36 @@
+services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: file:/app/data/gem-access.sqlite
+      GEM_ACCESS_JWT_SECRET: ${GEM_ACCESS_JWT_SECRET:?Defina GEM_ACCESS_JWT_SECRET no ambiente}
+      GEM_ACCESS_ADMIN_EMAIL: ${GEM_ACCESS_ADMIN_EMAIL:-admin@gemaccess.local}
+      GEM_ACCESS_ADMIN_PASSWORD: ${GEM_ACCESS_ADMIN_PASSWORD:-gemaccess123}
+      GEM_ACCESS_ALLOWED_ORIGINS: ${GEM_ACCESS_ALLOWED_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
+    volumes:
+      - gem-access-data:/app/data
+    command: sh -c "npm run db:setup && node server/index.js"
+
+  frontend:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./dashboard.html:/usr/share/nginx/html/dashboard.html:ro
+      - ./connections.html:/usr/share/nginx/html/connections.html:ro
+      - ./locations.html:/usr/share/nginx/html/locations.html:ro
+      - ./users.html:/usr/share/nginx/html/users.html:ro
+      - ./alerts.html:/usr/share/nginx/html/alerts.html:ro
+      - ./reports.html:/usr/share/nginx/html/reports.html:ro
+      - ./assets:/usr/share/nginx/html/assets:ro
+      - ./css:/usr/share/nginx/html/css:ro
+    depends_on:
+      - api
+
+volumes:
+  gem-access-data:

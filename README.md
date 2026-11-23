@@ -57,6 +57,23 @@ O GEM Access não substitui essas ferramentas nem administra servidores VPN nest
 
 Para demonstrar somente a etapa 1.1, pare o Express e execute `npm run frontend:json-server`. Os dois servidores não podem ocupar a mesma porta ao mesmo tempo.
 
+### Execução com Docker
+
+1. Gere um segredo seguro e exporte as variáveis:
+
+   ```bash
+   export GEM_ACCESS_JWT_SECRET="cole-aqui-uma-chave-aleatoria-com-mais-de-32-caracteres"
+   export GEM_ACCESS_ADMIN_EMAIL="admin@gemaccess.local"
+   export GEM_ACCESS_ADMIN_PASSWORD="gemaccess123"
+   docker compose up --build
+   ```
+
+2. Acesse a interface em `http://localhost:8080`.
+3. A API ficará disponível em `http://localhost:3000`.
+4. A documentação Swagger/OpenAPI ficará disponível em `http://localhost:3000/docs/`.
+
+O Compose cria um volume persistente para o banco SQLite e inicia migrations e seed antes do servidor.
+
 ### Organização do Back-end Express
 
 - `server/routes/`: define as rotas REST dos recursos.

@@ -1,5 +1,6 @@
 import express from "express";
 import { rateLimit } from "express-rate-limit";
+import { resolve } from "node:path";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { notFound } from "./middleware/notFound.js";
 import { createResourceRouter } from "./routes/resourceRoutes.js";
@@ -60,6 +61,7 @@ export function createApp({ store = createPrismaStore(), auth = {} } = {}) {
   app.use(configureCors);
   app.use(express.json({ limit: "100kb" }));
   app.get("/health", (_request, response) => response.json({ status: "ok" }));
+  app.use("/docs", express.static(resolve(process.cwd(), "docs")));
   app.use("/auth/login", authLimiter);
   app.use("/auth/register", authLimiter);
   app.use("/auth", authRoutes.router);

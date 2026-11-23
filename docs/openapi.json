@@ -1,0 +1,164 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "GEM Access API",
+    "version": "1.2.0",
+    "description": "API REST para monitoramento demonstrativo de conexões VPN."
+  },
+  "servers": [
+    { "url": "http://localhost:3000" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    { "bearerAuth": [] }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Verificar saúde da API",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "API disponível",
+            "content": {
+              "application/json": {
+                "example": { "status": "ok" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "Cadastrar usuário comum",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": { "type": "string", "maxLength": 120 },
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "minLength": 10, "maxLength": 128 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Conta criada e sessão emitida" },
+          "400": { "description": "Dados inválidos", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": { "description": "E-mail já cadastrado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Autenticar usuário",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Token JWT e usuário público" },
+          "401": { "description": "Credenciais inválidas", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Revogar sessão atual",
+        "responses": {
+          "204": { "description": "Sessão revogada" },
+          "401": { "description": "Token ausente ou inválido", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/connections": {
+      "get": {
+        "summary": "Listar conexões",
+        "responses": {
+          "200": { "description": "Lista de conexões" },
+          "401": { "description": "Não autenticado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "summary": "Criar conexão",
+        "responses": {
+          "201": { "description": "Conexão criada" },
+          "403": { "description": "Perfil sem permissão" },
+          "400": { "description": "Dados inválidos" }
+        }
+      }
+    },
+    "/connections/{id}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ],
+      "get": { "summary": "Consultar conexão", "responses": { "200": { "description": "Conexão encontrada" }, "404": { "description": "Não encontrada" } } },
+      "put": { "summary": "Substituir conexão", "responses": { "200": { "description": "Conexão substituída" }, "403": { "description": "Perfil sem permissão" } } },
+      "patch": { "summary": "Atualizar parcialmente conexão", "responses": { "200": { "description": "Conexão atualizada" }, "403": { "description": "Perfil sem permissão" } } },
+      "delete": { "summary": "Excluir conexão", "responses": { "204": { "description": "Excluída" }, "403": { "description": "Perfil sem permissão" } } }
+    },
+    "/alerts": {
+      "get": { "summary": "Listar alertas", "responses": { "200": { "description": "Lista de alertas" } } },
+      "post": { "summary": "Criar alerta", "responses": { "201": { "description": "Alerta criado" }, "403": { "description": "Perfil sem permissão" } } }
+    },
+    "/alerts/{id}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+      ],
+      "get": { "summary": "Consultar alerta", "responses": { "200": { "description": "Alerta encontrado" } } },
+      "put": { "summary": "Substituir alerta", "responses": { "200": { "description": "Alerta substituído" } } },
+      "patch": { "summary": "Atualizar alerta", "responses": { "200": { "description": "Alerta atualizado" } } },
+      "delete": { "summary": "Excluir alerta", "responses": { "204": { "description": "Alerta excluído" } } }
+    },
+    "/users": {
+      "get": { "summary": "Listar usuários", "responses": { "200": { "description": "Lista pública de usuários" } } }
+    },
+    "/servers": {
+      "get": { "summary": "Listar servidores", "responses": { "200": { "description": "Lista de servidores" } } }
+    },
+    "/network": {
+      "get": { "summary": "Listar componentes da rede", "responses": { "200": { "description": "Lista de componentes" } } }
+    }
+  }
+}
