@@ -55,7 +55,7 @@ O GEM Access não substitui essas ferramentas nem administra servidores VPN nest
    npm test
    ```
 
-Para demonstrar somente a etapa 1.1, pare o Express e execute `npx json-server data/db.json --port 3000`. Os dois servidores não podem ocupar a mesma porta ao mesmo tempo.
+Para demonstrar somente a etapa 1.1, pare o Express e execute `npm run frontend:json-server`. Os dois servidores não podem ocupar a mesma porta ao mesmo tempo.
 
 ### Organização do Back-end Express
 

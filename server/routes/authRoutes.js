@@ -48,11 +48,13 @@ export function createAuthRoutes({ store, jwtSecret } = {}) {
       }
 
       if (await store.isTokenRevoked(payload.jti)) throw new Error("Revoked token.");
+      const account = await store.findUserById(Number(payload.sub));
+      if (!account) throw new Error("User no longer exists.");
 
       request.authTokenId = payload.jti;
       request.authTokenExpiresAt = Number(payload.exp) * 1000;
       request.authUserId = Number(payload.sub);
-      request.authRole = typeof payload.role === "string" ? payload.role : "";
+      request.authRole = typeof account.role === "string" ? account.role : "";
       return next();
     } catch {
       return next(new HttpError(401, "UNAUTHORIZED", "Sua sessão expirou. Entre novamente."));

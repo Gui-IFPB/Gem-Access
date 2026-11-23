@@ -121,6 +121,15 @@ export function createJsonStore(filePath = resolve(process.cwd(), "data/db.json"
       });
     },
 
+    findUserById(id) {
+      return runExclusive(async () => {
+        const users = getResource(await readDatabase(), "users");
+        const user = users.find((item) => String(item.id) === String(id));
+        if (!user) return null;
+        return toPublicRecord("users", user);
+      });
+    },
+
     createUserAccount({ name, email, passwordHash }) {
       return runExclusive(async () => {
         const database = await readDatabase();

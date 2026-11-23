@@ -20,7 +20,8 @@ export async function seedDatabase(client = prisma) {
     ? JSON.parse(await readFile(resolve(process.cwd(), "data/db.json"), "utf8"))
     : null;
   const adminEmail = (process.env.GEM_ACCESS_ADMIN_EMAIL || "admin@gemaccess.local").trim().toLowerCase();
-  const adminPassword = process.env.GEM_ACCESS_ADMIN_PASSWORD || "gemaccess123";
+  const adminPassword = process.env.GEM_ACCESS_ADMIN_PASSWORD
+    || (process.env.NODE_ENV === "production" ? "" : "gemaccess123");
   if (adminPassword.length < 10 || adminPassword.length > 128) {
     throw new Error("GEM_ACCESS_ADMIN_PASSWORD deve ter de 10 a 128 caracteres.");
   }

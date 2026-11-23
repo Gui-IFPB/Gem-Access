@@ -172,6 +172,13 @@ export function createPrismaStore({ client = createPrismaClient() } = {}) {
       }));
     },
 
+    findUserById(id) {
+      return run(() => client.user.findUnique({
+        where: { id: recordId(id) },
+        select: { id: true, name: true, email: true, role: true }
+      }));
+    },
+
     createUserAccount({ name, email, passwordHash }) {
       return run(async () => toApiRecord("users", await client.user.create({
         data: { name, email, role: "Usuário", passwordHash }

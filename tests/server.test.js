@@ -58,6 +58,28 @@ test("resource routes validate input, perform CRUD, and return centralized error
   assert.equal(listResponse.status, 200);
   assert.equal((await listResponse.json()).length, 2);
 
+  const databaseAfterLogin = JSON.parse(await readFile(dataFile, "utf8"));
+  const accountAfterLogin = databaseAfterLogin.users.find((user) => user.email === "admin@test.local");
+  accountAfterLogin.role = "Usuário";
+  await writeFile(dataFile, JSON.stringify(databaseAfterLogin, null, 2), "utf8");
+
+  const downgradedCreate = await fetch(`${baseUrl}/alerts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authorization },
+    body: JSON.stringify({
+      severity: "medium",
+      title: "Bloqueado após mudança de perfil",
+      description: "O token antigo não deve manter privilégios administrativos.",
+      time: "Agora",
+      status: "active"
+    })
+  });
+  assert.equal(downgradedCreate.status, 403);
+  assert.equal((await downgradedCreate.json()).error.code, "FORBIDDEN");
+
+  accountAfterLogin.role = "Administrador";
+  await writeFile(dataFile, JSON.stringify(databaseAfterLogin, null, 2), "utf8");
+
   const invalidResponse = await fetch(`${baseUrl}/connections`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authorization },
