@@ -16,7 +16,8 @@ export async function seedDatabase(client = prisma) {
     client.networkComponent.count()
   ]);
   const isEmpty = counts.every((count) => count === 0);
-  const fixture = isEmpty
+  const isProduction = process.env.NODE_ENV === "production";
+  const fixture = isEmpty && !isProduction
     ? JSON.parse(await readFile(resolve(process.cwd(), "data/db.json"), "utf8"))
     : null;
   const adminEmail = (process.env.GEM_ACCESS_ADMIN_EMAIL || "admin@gemaccess.local").trim().toLowerCase();
@@ -67,8 +68,10 @@ export async function seedDatabase(client = prisma) {
       });
     }
 
-    const missingServer = await transaction.server.findUnique({ where: { id: 1 } });
-    if (!missingServer) {
+    const missingServer = !isProduction
+      ? await transaction.server.findUnique({ where: { id: 1 } })
+      : null;
+    if (!isProduction && !missingServer) {
       const fixture = JSON.parse(await readFile(resolve(process.cwd(), "data/db.json"), "utf8"));
       const server = fixture.servers.find((item) => item.id === 1);
       if (server) await transaction.server.create({ data: server });

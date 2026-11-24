@@ -54,6 +54,42 @@ test("Prisma store applies migrations, seeds data, and enforces persistence cons
   assert.equal(seededConnections[0].user, "Guilherme");
   assert.equal(seededConnections[0].sourceLocation.city, "Recife");
 
+  const productionDatabasePath = join(directory, "production.sqlite");
+  await execFile(process.execPath, [
+    resolve("node_modules/prisma/build/index.js"),
+    "migrate",
+    "deploy",
+    "--config",
+    configPath
+  ], { cwd: directory, env: { ...process.env, DATABASE_URL: `file:${productionDatabasePath}` } });
+  const productionClient = createPrismaClient({ url: `file:${productionDatabasePath}` });
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalAdminEmail = process.env.GEM_ACCESS_ADMIN_EMAIL;
+  const originalAdminPassword = process.env.GEM_ACCESS_ADMIN_PASSWORD;
+  process.env.NODE_ENV = "production";
+  process.env.GEM_ACCESS_ADMIN_EMAIL = "production-admin@gemaccess.local";
+  process.env.GEM_ACCESS_ADMIN_PASSWORD = "production-test-password";
+  try {
+    assert.equal(await seedDatabase(productionClient), true);
+    assert.equal(await productionClient.user.count(), 1);
+    const productionAdmin = await productionClient.user.findUnique({
+      where: { email: "production-admin@gemaccess.local" }
+    });
+    assert.equal(await verifyPassword("production-test-password", productionAdmin.passwordHash), true);
+    assert.equal(await productionClient.server.count(), 0);
+    assert.equal(await productionClient.connection.count(), 0);
+    assert.equal(await productionClient.alert.count(), 0);
+    assert.equal(await productionClient.networkComponent.count(), 0);
+  } finally {
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalNodeEnv;
+    if (originalAdminEmail === undefined) delete process.env.GEM_ACCESS_ADMIN_EMAIL;
+    else process.env.GEM_ACCESS_ADMIN_EMAIL = originalAdminEmail;
+    if (originalAdminPassword === undefined) delete process.env.GEM_ACCESS_ADMIN_PASSWORD;
+    else process.env.GEM_ACCESS_ADMIN_PASSWORD = originalAdminPassword;
+    await productionClient.$disconnect();
+  }
+
   const user = await store.create("users", {
     name: "Teste Prisma",
     email: "teste-prisma@gemaccess.local",

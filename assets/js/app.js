@@ -1,5 +1,6 @@
 import { apiRequest, clearAuthToken, getAuthToken, getAuthUser, isAdministrator, loadResource, login, logout, register } from './api.js';
 import { renderAlerts, renderBreakdown, renderDashboard, renderLocations, renderReports, renderUsers, renderConnectionRows, renderVpnLabStatus, updateAlertsBadge } from './renderers.js';
+import { downloadConnectionReport } from './reportExport.js';
 import { escapeHtml, showTableMessage } from './utils.js';
 
 const page = document.body?.dataset?.page;
@@ -93,7 +94,14 @@ async function loadPage() {
     }
     if (page === "users") renderUsers({ users: data.users, connections: data.connections });
     if (page === "alerts") renderAlerts(data.alerts || []);
-    if (page === "reports") renderReports({ connections: data.connections, alerts: data.alerts || [] });
+    if (page === "reports") {
+      renderReports({ connections: data.connections, alerts: data.alerts || [] });
+      const exportButton = document.getElementById("report-export");
+      if (exportButton) {
+        exportButton.disabled = false;
+        exportButton.addEventListener("click", () => downloadConnectionReport(data.connections));
+      }
+    }
     if (page === "locations") renderLocations({ connections: data.connections, servers: data.servers || [] });
     document.getElementById("api-error")?.remove();
   } catch (error) {

@@ -22,5 +22,8 @@
   "devDependencies": {
     "json-server": "^0.17.4",
     "prisma": "^7.10.1"
+  },
+  "overrides": {
+    "effect": "3.22.1"
   }
 }

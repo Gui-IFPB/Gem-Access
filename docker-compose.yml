@@ -2,14 +2,14 @@ services:
   api:
     build: .
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       NODE_ENV: production
       PORT: 3000
       DATABASE_URL: file:/app/data/gem-access.sqlite
       GEM_ACCESS_JWT_SECRET: ${GEM_ACCESS_JWT_SECRET:?Defina GEM_ACCESS_JWT_SECRET no ambiente}
-      GEM_ACCESS_ADMIN_EMAIL: ${GEM_ACCESS_ADMIN_EMAIL:-admin@gemaccess.local}
-      GEM_ACCESS_ADMIN_PASSWORD: ${GEM_ACCESS_ADMIN_PASSWORD:-gemaccess123}
+      GEM_ACCESS_ADMIN_EMAIL: ${GEM_ACCESS_ADMIN_EMAIL:?Defina GEM_ACCESS_ADMIN_EMAIL}
+      GEM_ACCESS_ADMIN_PASSWORD: ${GEM_ACCESS_ADMIN_PASSWORD:?Defina GEM_ACCESS_ADMIN_PASSWORD}
       GEM_ACCESS_ALLOWED_ORIGINS: ${GEM_ACCESS_ALLOWED_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
     volumes:
       - gem-access-data:/app/data
@@ -28,7 +28,7 @@ services:
   frontend:
     image: nginx:1.27-alpine
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
     volumes:
       - ./index.html:/usr/share/nginx/html/index.html:ro
       - ./dashboard.html:/usr/share/nginx/html/dashboard.html:ro

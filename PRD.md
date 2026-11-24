@@ -24,6 +24,7 @@ Administradores de redes e equipes de suporte que acompanham infraestrutura VPN.
 - Usuários e perfis.
 - Alertas com criação, edição e exclusão.
 - Relatórios com tráfego e duração.
+- Exportação CSV dos registros de conexões demonstrativos.
 - Integração opcional com o status de uma instância OpenVPN local gerenciada por Vagrant.
 - Histórico persistido de sessões, horários de conexão/desconexão e contadores de bytes do laboratório.
 

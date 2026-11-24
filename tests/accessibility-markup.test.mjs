@@ -24,6 +24,12 @@ test("application pages expose accessible navigation and a main-content skip lin
   }
 });
 
+test("login page does not disclose the default demonstration credentials", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+
+  assert.doesNotMatch(html, /admin@gemaccess\.local|gemaccess123/);
+});
+
 test("data tables include captions and scoped column headers", () => {
   for (const page of ["dashboard.html", "connections.html", "users.html"]) {
     const html = readFileSync(new URL(`../${page}`, import.meta.url), "utf8");

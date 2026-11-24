@@ -2,4 +2,6 @@ node_modules
 .git
 .env
 data/*.sqlite*
+data/openvpn-lab-client.ovpn
+**/.vagrant
 npm-debug.log*

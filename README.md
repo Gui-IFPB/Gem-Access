@@ -55,6 +55,8 @@ O GEM Access não substitui essas ferramentas nem administra servidores VPN. A i
    npm test
    ```
 
+No ambiente local de desenvolvimento, o seed usa `admin@gemaccess.local` / `gemaccess123` por padrão. Essa conta e senha são exclusivas para demonstração; nunca as use em uma implantação.
+
 Para demonstrar somente a etapa 1.1, pare o Express e execute `npm run frontend:json-server`. Os dois servidores não podem ocupar a mesma porta ao mesmo tempo.
 
 ### Laboratório local de VPN
@@ -69,14 +71,17 @@ Para exibir as sessões do laboratório no dashboard e em Conexões:
 
 O coletor consulta o status versionado do OpenVPN a cada cinco segundos usando o SSH gerenciado pelo Vagrant. O endpoint autenticado `/vpn-lab/status` alimenta as telas e preserva o histórico de sessões e contadores no SQLite. Essa integração é específica ao laboratório local, não é uma configuração de produção, não coleta dados enquanto a VM está desligada e não é habilitada pelo Docker Compose.
 
-### Execução com Docker
+### Execução local com Docker
 
-1. Gere um segredo seguro e exporte as variáveis:
+Este Compose é para desenvolvimento local; as portas ficam limitadas a `127.0.0.1`. Ele não configura TLS, proxy reverso, domínio, monitoramento ou backup automatizado e não deve ser tratado como implantação de produção.
+
+1. Gere segredos locais exclusivos e exporte as variáveis. Guarde a senha administrativa em um gerenciador de senhas:
 
    ```bash
    export GEM_ACCESS_JWT_SECRET="$(openssl rand -base64 48)"
-   export GEM_ACCESS_ADMIN_EMAIL="admin@gemaccess.local"
-   export GEM_ACCESS_ADMIN_PASSWORD="gemaccess123"
+   export GEM_ACCESS_ADMIN_EMAIL="admin@localhost"
+   export GEM_ACCESS_ADMIN_PASSWORD="$(openssl rand -base64 24)"
+   printf 'Guarde esta senha administrativa: %s\n' "$GEM_ACCESS_ADMIN_PASSWORD"
    docker compose up --build
    ```
 
@@ -84,7 +89,7 @@ O coletor consulta o status versionado do OpenVPN a cada cinco segundos usando o
 3. A API ficará disponível em `http://localhost:3000`.
 4. A documentação Swagger/OpenAPI ficará disponível em `http://localhost:3000/docs/`.
 
-O Compose cria um volume persistente para o banco SQLite e inicia migrations e seed antes do servidor.
+O Compose cria um volume persistente para o banco SQLite. Em modo de produção, o seed cria somente a conta administrativa e não importa os registros demonstrativos. Guarde os segredos: a senha é necessária para entrar e o segredo JWT deve permanecer estável para manter válidos os tokens existentes. O volume Docker não substitui backups; para dados que precisem ser preservados, configure e teste uma rotina de cópia/restauração antes de qualquer implantação.
 
 ### Organização do Back-end Express
 
@@ -100,17 +105,17 @@ O servidor usa SQLite por meio do Prisma ORM. O schema fica em `prisma/schema.pr
 
 O schema define `User`, `Server`, `Connection`, `Alert` e `NetworkComponent` (tabela `network`). Um usuário pode ter várias conexões; cada conexão pertence a um servidor e pode estar associada a um usuário. A associação do usuário é opcional para manter registros demonstrativos que ainda não correspondam a uma conta cadastrada, enquanto o nome original continua preservado na conexão. A exclusão de um usuário mantém as conexões e remove somente a associação; servidores com conexões não podem ser excluídos. E-mail de usuário é único. A localização de origem da conexão é armazenada em colunas próprias e convertida para o objeto `sourceLocation` na API.
 
-As migrations SQL versionadas ficam em `prisma/migrations/`. `npm run db:migrate` aplica migrations pendentes; para evoluir o schema durante o desenvolvimento, altere `prisma/schema.prisma` e gere uma migration com `npx prisma migrate dev --name descricao-da-alteracao`. `npm run db:setup` aplica as migrations e importa `data/db.json` uma única vez para iniciar a demonstração; a carga é ignorada se o banco já contiver registros.
+As migrations SQL versionadas ficam em `prisma/migrations/`. `npm run db:migrate` aplica migrations pendentes; para evoluir o schema durante o desenvolvimento, altere `prisma/schema.prisma` e gere uma migration com `npx prisma migrate dev --name descricao-da-alteracao`. Em desenvolvimento, `npm run db:setup` aplica as migrations e importa `data/db.json` uma única vez para iniciar a demonstração; a carga é ignorada se o banco já contiver registros. Em produção, o seed não importa fixtures nem cria registros de VPN demonstrativos.
 
 O `prismaStore` integra o client às operações CRUD já expostas pela API. `P2002` (valor único duplicado) vira `409 DUPLICATE_RECORD`; `P2003` (integridade referencial) vira `409 RELATION_CONFLICT`; registro ausente vira `404 NOT_FOUND`. Outros erros do banco são encapsulados como `500 PERSISTENCE_ERROR`, sem expor detalhes internos. A validação de entrada e o middleware central continuam responsáveis pelos erros HTTP padronizados.
 
 Os recursos das entidades são protegidos por login. Contas comuns podem consultar dados, enquanto contas Administrador podem criar, alterar e excluir registros. Senhas usam scrypt e o login retorna um JWT; o logout registra o identificador revogado no banco até o vencimento do token.
 
-Em desenvolvimento, se `GEM_ACCESS_JWT_SECRET` não estiver definido, o servidor gera uma chave aleatória para o processo; os tokens deixam de valer após reiniciar. Em produção, configure `GEM_ACCESS_JWT_SECRET` com pelo menos 32 bytes e defina `GEM_ACCESS_ADMIN_EMAIL` / `GEM_ACCESS_ADMIN_PASSWORD` antes da primeira carga do seed. O logout persiste os identificadores revogados na tabela `revoked_tokens`; os registros vencidos são removidos automaticamente.
+Em desenvolvimento, se `GEM_ACCESS_JWT_SECRET` não estiver definido, o servidor gera uma chave aleatória para o processo; os tokens deixam de valer após reiniciar. Em produção, configure `GEM_ACCESS_JWT_SECRET` com pelo menos 32 bytes e defina `GEM_ACCESS_ADMIN_EMAIL` / `GEM_ACCESS_ADMIN_PASSWORD` antes da carga do seed. O seed de produção não carrega dados de demonstração e exige senha administrativa definida. O logout persiste os identificadores revogados na tabela `revoked_tokens`; os registros vencidos são removidos automaticamente.
 
-## Páginas / Telas da Aplicação (GitHub Pages)
+## Páginas / Telas da Aplicação
 
-O GitHub Pages está configurado. As telas disponíveis no repositório são:
+As páginas estáticas estão no repositório. O frontend atualmente aponta para a API local `http://localhost:3000`; hospedar somente as páginas no GitHub Pages não disponibiliza a API nem permite autenticação para outros usuários. Para acesso remoto, é necessário implantar uma API autorizada, configurar a origem permitida, HTTPS e uma URL de API apropriada.
 
 - 🏠 **Índice / Login:** [index.html](index.html)
 - 📊 **Dashboard:** [dashboard.html](dashboard.html)
@@ -128,18 +133,19 @@ O GitHub Pages está configurado. As telas disponíveis no repositório são:
 - [x] Busca por usuário/IP e filtro por status na tela de conexões.
 - [x] Consumo de API simulada com `fetch` e JSON Server para a etapa 1.1.
 - [x] API REST Express para os recursos do protótipo, com operações CRUD, validação e tratamento centralizado de erros.
-- [x] Persistência relacional SQLite com Prisma, migrations, relacionamentos, seed inicial e tratamento de erros de integridade.
+- [x] Persistência relacional SQLite com Prisma, migrations, relacionamentos, seed de demonstração em desenvolvimento e tratamento de erros de integridade.
 - [x] Login validado pela API, token de sessão no cliente e proteção das rotas de dados.
-- [ ] Persistência relacional com Prisma ORM e migrations.
-- [ ] Coleta de dados reais de VPN/rede, notificações automáticas e exportação de relatórios.
+- [x] Coleta opcional de sessões e contadores do laboratório OpenVPN local, persistência de histórico e exibição separada dos dados demonstrativos.
+- [x] Exportação CSV dos registros de conexões demonstrativos, com neutralização de fórmulas de planilhas.
+- [ ] Integração autorizada com infraestrutura VPN de produção e notificações automáticas.
 
 ## Estratégia para Obtenção de Dados Reais (Hipóteses Técnicas)
 
-As opções abaixo são hipóteses para etapas futuras. O protótipo ainda não coleta informações de sistemas VPN ou equipamentos reais.
+O coletor OpenVPN implementado é uma integração funcional com a VM local de laboratório, não com uma infraestrutura institucional ou de produção.
 
 - **Fontes de Dados & Coleta:**
   - OpenVPN: avaliar registros do serviço, por exemplo com `journalctl -u openvpn-server@server`, para identificar conexões, desconexões, horários e usuários. A unidade e o formato variam conforme a instalação.
   - WireGuard: consultar contadores e handshakes recentes com `wg show all transfer` e `wg show all latest-handshakes`; consultas periódicas seriam necessárias para construir histórico.
   - Infraestrutura: considerar API do Zabbix ou métricas via SNMP para estado de servidores, gateways e alertas.
   - Toda coleta dependeria de autorização, escopo de leitura mínimo e cuidados com IPs, identificadores e retenção de logs.
-- **Armazenamento & API:** o serviço Express já normaliza os dados demonstrativos em um modelo relacional SQLite com Prisma. A coleta real das fontes ainda é uma etapa futura; os registros atuais continuam sendo fictícios.
+- **Armazenamento & API:** o serviço Express persiste dados demonstrativos e sessões do laboratório OpenVPN em SQLite por Prisma. Conectar fontes externas requer autorização, credenciais e configuração específicas; os demais registros continuam demonstrativos.

@@ -47,3 +47,12 @@ Critérios:
 - O endpoint de status exige autenticação e perfil Administrador.
 - A interface identifica estado desabilitado, indisponível, sem clientes e com clientes ativos.
 - Nenhum certificado/perfil privado é enviado à API ou versionado.
+
+## HU06 - Exportar relatório de conexões
+
+Como administrador ou usuário autenticado, quero baixar os registros de conexões em CSV para analisar os indicadores fora do painel.
+
+Critérios:
+- O CSV usa cabeçalho, UTF-8 e delimitador compatível com planilhas comuns.
+- Campos são escapados corretamente e valores que podem iniciar fórmulas são neutralizados.
+- A exportação identifica que contém somente registros demonstrativos; sessões reais do laboratório continuam destacadas em Dashboard e Conexões.

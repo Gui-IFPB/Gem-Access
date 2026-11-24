@@ -19,9 +19,12 @@ test("OpenVPN lab is isolated to the host-only network", () => {
 test("OpenVPN lab keeps generated private material outside the repository", () => {
   const provision = readLabFile("provision.sh");
   const ignore = readFileSync(new URL("../.gitignore", import.meta.url), "utf8");
+  const dockerIgnore = readFileSync(new URL("../.dockerignore", import.meta.url), "utf8");
 
   assert.match(provision, /client_profile=\/root\/gem-access-demo\.ovpn/);
   assert.match(provision, /chmod 600 "\$client_profile"/);
   assert.match(ignore, /^data\/openvpn-lab-client\.ovpn$/m);
   assert.match(ignore, /^\.vagrant\/$/m);
+  assert.match(dockerIgnore, /^data\/openvpn-lab-client\.ovpn$/m);
+  assert.match(dockerIgnore, /^\*\*\/\.vagrant$/m);
 });
