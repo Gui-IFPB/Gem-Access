@@ -58,6 +58,17 @@ function toDatabaseRecord(resource, values, userId) {
   };
 }
 
+function toVpnSessionRecord(record) {
+  return {
+    ...record,
+    connectedAt: record.connectedAt.toISOString(),
+    lastSeenAt: record.lastSeenAt.toISOString(),
+    disconnectedAt: record.disconnectedAt?.toISOString() ?? null,
+    bytesReceived: record.bytesReceived.toString(),
+    bytesSent: record.bytesSent.toString()
+  };
+}
+
 function recordId(id) {
   const parsedId = Number(id);
   if (!Number.isSafeInteger(parsedId) || parsedId < 1) {
@@ -120,6 +131,68 @@ export function createPrismaStore({ client = createPrismaClient() } = {}) {
         });
         return records.map((record) => toApiRecord(resource, record));
       });
+    },
+
+    listVpnSessions(limit = 50) {
+      return run(async () => {
+        const records = await client.vpnSession.findMany({
+          orderBy: { connectedAt: "desc" },
+          take: limit
+        });
+        return records.map(toVpnSessionRecord);
+      });
+    },
+
+    syncVpnSessions(sessions, observedAt) {
+      return run(() => client.$transaction(async (transaction) => {
+        const activeRecords = await transaction.vpnSession.findMany({
+          where: { source: "openvpn-lab", disconnectedAt: null },
+          select: { sourceSessionId: true }
+        });
+        const incomingIds = new Set(sessions.map(({ sourceSessionId }) => sourceSessionId));
+        const disconnectedIds = activeRecords
+          .map(({ sourceSessionId }) => sourceSessionId)
+          .filter((sourceSessionId) => !incomingIds.has(sourceSessionId));
+
+        if (disconnectedIds.length) {
+          await transaction.vpnSession.updateMany({
+            where: { source: "openvpn-lab", sourceSessionId: { in: disconnectedIds } },
+            data: { disconnectedAt: observedAt, lastSeenAt: observedAt }
+          });
+        }
+
+        for (const session of sessions) {
+          const { sourceSessionId, commonName, realAddress, vpnAddress, connectedAt, bytesReceived, bytesSent } = session;
+          await transaction.vpnSession.upsert({
+            where: { sourceSessionId },
+            create: {
+              sourceSessionId,
+              commonName,
+              realAddress,
+              vpnAddress,
+              connectedAt,
+              lastSeenAt: observedAt,
+              bytesReceived,
+              bytesSent
+            },
+            update: {
+              commonName,
+              realAddress,
+              vpnAddress,
+              lastSeenAt: observedAt,
+              disconnectedAt: null,
+              bytesReceived,
+              bytesSent
+            }
+          });
+        }
+
+        const records = await transaction.vpnSession.findMany({
+          orderBy: { connectedAt: "desc" },
+          take: 50
+        });
+        return records.map(toVpnSessionRecord);
+      }));
     },
 
     findById(resource, id) {

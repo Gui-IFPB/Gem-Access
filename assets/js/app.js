@@ -1,5 +1,5 @@
 import { apiRequest, clearAuthToken, getAuthToken, getAuthUser, isAdministrator, loadResource, login, logout, register } from './api.js';
-import { renderAlerts, renderBreakdown, renderDashboard, renderLocations, renderReports, renderUsers, renderConnectionRows, updateAlertsBadge } from './renderers.js';
+import { renderAlerts, renderBreakdown, renderDashboard, renderLocations, renderReports, renderUsers, renderConnectionRows, renderVpnLabStatus, updateAlertsBadge } from './renderers.js';
 import { escapeHtml, showTableMessage } from './utils.js';
 
 const page = document.body?.dataset?.page;
@@ -56,8 +56,12 @@ async function loadPage() {
   try {
     if (page === "connections") {
       initConnectionsPage();
-      const alerts = await loadResource("alerts");
+      const [alerts, vpnLabStatus] = await Promise.all([
+        loadResource("alerts"),
+        loadResource("vpn-lab/status")
+      ]);
       updateAlertsBadge(alerts);
+      renderVpnLabStatus(vpnLabStatus);
       document.getElementById("api-error")?.remove();
       return;
     }
@@ -72,7 +76,7 @@ async function loadPage() {
     }
 
     const resourcesMap = {
-      dashboard: ["connections", "alerts", "network"],
+      dashboard: ["connections", "alerts", "network", "vpn-lab/status"],
       users: ["users", "connections", "alerts"],
       alerts: ["alerts"],
       reports: ["connections", "alerts"],
@@ -83,7 +87,10 @@ async function loadPage() {
     const data = Object.fromEntries(await Promise.all(resources.map(async (resource) => [resource, await loadResource(resource)])));
     updateAlertsBadge(data.alerts || []);
 
-    if (page === "dashboard") renderDashboard({ connections: data.connections, alerts: data.alerts, network: data.network || [] });
+    if (page === "dashboard") {
+      renderDashboard({ connections: data.connections, alerts: data.alerts, network: data.network || [] });
+      renderVpnLabStatus(data["vpn-lab/status"]);
+    }
     if (page === "users") renderUsers({ users: data.users, connections: data.connections });
     if (page === "alerts") renderAlerts(data.alerts || []);
     if (page === "reports") renderReports({ connections: data.connections, alerts: data.alerts || [] });

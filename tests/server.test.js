@@ -12,10 +12,13 @@ test("resource routes validate input, perform CRUD, and return centralized error
   const dataFile = join(directory, "db.json");
   const fixture = JSON.parse(await readFile(new URL("../data/db.json", import.meta.url), "utf8"));
   await writeFile(dataFile, JSON.stringify(fixture), "utf8");
-
+  const vpnLabCollector = {
+    getStatus: () => ({ enabled: true, status: "active", lastPollAt: "2026-11-24T18:53:00.000Z" })
+  };
   const server = createApp({
     store: createJsonStore(dataFile),
-    auth: { jwtSecret: "test-secret-with-more-than-thirty-two-bytes" }
+    auth: { jwtSecret: "test-secret-with-more-than-thirty-two-bytes" },
+    vpnLabCollector
   }).listen(0);
   await once(server, "listening");
   t.after(async () => {
@@ -50,6 +53,16 @@ test("resource routes validate input, perform CRUD, and return centralized error
   const { token } = await loginResponse.json();
   const authorization = { Authorization: "Bearer " + token };
 
+  const vpnStatusResponse = await fetch(`${baseUrl}/vpn-lab/status`, { headers: authorization });
+  assert.equal(vpnStatusResponse.status, 200);
+  assert.deepEqual(await vpnStatusResponse.json(), {
+    enabled: true,
+    status: "active",
+    lastPollAt: "2026-11-24T18:53:00.000Z",
+    message: null,
+    sessions: []
+  });
+
   const usersResponse = await fetch(`${baseUrl}/users`, { headers: authorization });
   assert.equal(usersResponse.status, 200);
   assert.equal((await usersResponse.json()).some((user) => "passwordHash" in user), false);
@@ -76,6 +89,9 @@ test("resource routes validate input, perform CRUD, and return centralized error
   });
   assert.equal(downgradedCreate.status, 403);
   assert.equal((await downgradedCreate.json()).error.code, "FORBIDDEN");
+  const downgradedVpnStatus = await fetch(`${baseUrl}/vpn-lab/status`, { headers: authorization });
+  assert.equal(downgradedVpnStatus.status, 403);
+  assert.equal((await downgradedVpnStatus.json()).error.code, "FORBIDDEN");
 
   accountAfterLogin.role = "Administrador";
   await writeFile(dataFile, JSON.stringify(databaseAfterLogin, null, 2), "utf8");
@@ -155,9 +171,13 @@ test("resource routes reject missing or invalid session tokens", async (t) => {
   const dataFile = join(directory, "db.json");
   const fixture = JSON.parse(await readFile(new URL("../data/db.json", import.meta.url), "utf8"));
   await writeFile(dataFile, JSON.stringify(fixture), "utf8");
+  const vpnLabCollector = {
+    getStatus: () => ({ enabled: true, status: "active", lastPollAt: "2026-11-24T18:53:00.000Z" })
+  };
   const server = createApp({
     store: createJsonStore(dataFile),
-    auth: { jwtSecret: "test-secret-with-more-than-thirty-two-bytes" }
+    auth: { jwtSecret: "test-secret-with-more-than-thirty-two-bytes" },
+    vpnLabCollector
   }).listen(0);
   await once(server, "listening");
   t.after(async () => {
@@ -170,6 +190,9 @@ test("resource routes reject missing or invalid session tokens", async (t) => {
   const unauthenticated = await fetch(`${baseUrl}/connections`);
   assert.equal(unauthenticated.status, 401);
   assert.equal((await unauthenticated.json()).error.code, "UNAUTHORIZED");
+  const unauthenticatedVpnStatus = await fetch(`${baseUrl}/vpn-lab/status`);
+  assert.equal(unauthenticatedVpnStatus.status, 401);
+  assert.equal((await unauthenticatedVpnStatus.json()).error.code, "UNAUTHORIZED");
 
   const invalidLogin = await fetch(`${baseUrl}/auth/login`, {
     method: "POST",

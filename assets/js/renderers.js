@@ -260,3 +260,78 @@ export function updateAlertsBadge(alerts) {
   if (!badge) return;
   badge.textContent = alerts.filter((alert) => alert.status === "active").length;
 }
+
+function formatBytes(bytes) {
+  const amount = Number(bytes);
+  if (!Number.isFinite(amount) || amount < 0) return "Indisponível";
+  if (amount < 1000) return `${amount} B`;
+  const units = ["kB", "MB", "GB", "TB"];
+  let value = amount / 1000;
+  let unitIndex = 0;
+  while (value >= 1000 && unitIndex < units.length - 1) {
+    value /= 1000;
+    unitIndex += 1;
+  }
+  return `${value.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} ${units[unitIndex]}`;
+}
+
+function appendTextCell(row, value) {
+  const cell = document.createElement("td");
+  cell.textContent = value;
+  row.appendChild(cell);
+}
+
+export function renderVpnLabStatus(status = { status: "unavailable", sessions: [] }) {
+  const statusElement = document.getElementById("vpn-lab-status");
+  const updatedElement = document.getElementById("vpn-lab-updated");
+  const tables = document.querySelectorAll("[data-vpn-lab-sessions]");
+  const labels = {
+    active: "Coleta ativa; há clientes conectados.",
+    idle: "Coleta ativa; nenhum cliente está conectado no momento.",
+    unavailable: "Coletor indisponível. Verifique a VM e o serviço OpenVPN.",
+    disabled: "Coleta desativada. Habilite GEM_ACCESS_OPENVPN_LAB_ENABLED e reinicie a API."
+  };
+
+  if (statusElement) {
+    statusElement.textContent = status.message || labels[status.status] || "Estado do laboratório não informado.";
+    statusElement.dataset.state = status.status;
+  }
+  if (updatedElement) {
+    updatedElement.textContent = status.lastPollAt
+      ? `Última coleta: ${new Date(status.lastPollAt).toLocaleTimeString("pt-BR")}`
+      : "Aguardando coleta";
+  }
+
+  for (const table of tables) {
+    const fragment = document.createDocumentFragment();
+    const sessions = Array.isArray(status.sessions) ? status.sessions : [];
+    if (!sessions.length) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 6;
+      cell.textContent = "Nenhuma sessão real coletada ainda.";
+      row.appendChild(cell);
+      fragment.appendChild(row);
+    } else {
+      for (const session of sessions) {
+        const row = document.createElement("tr");
+        appendTextCell(row, session.commonName || "Cliente sem nome");
+        appendTextCell(row, session.realAddress || "--");
+        appendTextCell(row, session.vpnAddress || "--");
+        appendTextCell(row, new Date(session.connectedAt).toLocaleString("pt-BR"));
+        appendTextCell(row, `Recebidos pelo servidor: ${formatBytes(session.bytesReceived)}; enviados: ${formatBytes(session.bytesSent)}`);
+
+        const stateCell = document.createElement("td");
+        const stateTag = document.createElement("span");
+        const isCurrent = !session.disconnectedAt && status.status === "active";
+        const isDisconnected = Boolean(session.disconnectedAt);
+        stateTag.className = `tag ${isCurrent ? "success" : "neutral"}`;
+        stateTag.textContent = isCurrent ? "Conectada" : isDisconnected ? "Desconectada" : "Estado não verificado";
+        stateCell.appendChild(stateTag);
+        row.appendChild(stateCell);
+        fragment.appendChild(row);
+      }
+    }
+    table.replaceChildren(fragment);
+  }
+}

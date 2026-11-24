@@ -95,6 +95,21 @@
       </header>
 
 
+      <section class="panel vpn-lab-panel" aria-labelledby="vpn-lab-title">
+        <div class="panel-header">
+          <div><h2 id="vpn-lab-title">Sessões reais do OpenVPN local</h2><p>Dados coletados do status do servidor de laboratório, separados dos registros demonstrativos abaixo.</p></div>
+          <span id="vpn-lab-updated" class="location-updated">Aguardando coleta</span>
+        </div>
+        <p id="vpn-lab-status" class="vpn-lab-status" role="status" aria-live="polite">Carregando status do laboratório...</p>
+        <div class="table-wrap" role="region" aria-label="Sessões observadas no OpenVPN local" tabindex="0">
+          <table>
+            <caption class="visually-hidden">Sessões atuais e históricas coletadas pelo laboratório OpenVPN local</caption>
+            <thead><tr><th scope="col">Cliente</th><th scope="col">Endereço de origem</th><th scope="col">IP VPN</th><th scope="col">Conectada em</th><th scope="col">Recebido pelo servidor / enviado</th><th scope="col">Estado</th></tr></thead>
+            <tbody data-vpn-lab-sessions><tr><td colspan="6">Carregando sessões...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
       <section class="panel connection-editor" aria-labelledby="connection-form-title">
         <div class="panel-header">
           <div>

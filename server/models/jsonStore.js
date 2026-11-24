@@ -58,6 +58,54 @@ export function createJsonStore(filePath = resolve(process.cwd(), "data/db.json"
         .map((record) => toPublicRecord(resource, record)));
     },
 
+    listVpnSessions(limit = 50) {
+      return runExclusive(async () => {
+        const database = await readDatabase();
+        const records = Array.isArray(database.vpnSessions) ? database.vpnSessions : [];
+        return records
+          .slice()
+          .sort((first, second) => new Date(second.connectedAt) - new Date(first.connectedAt))
+          .slice(0, limit);
+      });
+    },
+
+    syncVpnSessions(sessions, observedAt) {
+      return runExclusive(async () => {
+        const database = await readDatabase();
+        if (!Array.isArray(database.vpnSessions)) database.vpnSessions = [];
+        const incomingIds = new Set(sessions.map(({ sourceSessionId }) => sourceSessionId));
+
+        database.vpnSessions = database.vpnSessions.map((record) => (
+          record.source === "openvpn-lab"
+          && record.disconnectedAt === null
+          && !incomingIds.has(record.sourceSessionId)
+            ? { ...record, disconnectedAt: observedAt.toISOString(), lastSeenAt: observedAt.toISOString() }
+            : record
+        ));
+
+        for (const session of sessions) {
+          const index = database.vpnSessions.findIndex((record) => record.sourceSessionId === session.sourceSessionId);
+          const updated = {
+            ...session,
+            source: "openvpn-lab",
+            connectedAt: session.connectedAt.toISOString(),
+            lastSeenAt: observedAt.toISOString(),
+            disconnectedAt: null,
+            bytesReceived: session.bytesReceived.toString(),
+            bytesSent: session.bytesSent.toString()
+          };
+          if (index === -1) database.vpnSessions.push({ id: database.vpnSessions.length + 1, ...updated });
+          else database.vpnSessions[index] = { ...database.vpnSessions[index], ...updated };
+        }
+
+        await writeDatabase(database);
+        return database.vpnSessions
+          .slice()
+          .sort((first, second) => new Date(second.connectedAt) - new Date(first.connectedAt))
+          .slice(0, 50);
+      });
+    },
+
     findById(resource, id) {
       return runExclusive(async () => {
         const records = getResource(await readDatabase(), resource);

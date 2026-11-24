@@ -44,6 +44,21 @@
         <article class="stat-card warning"><span>Alertas ativos</span><strong id="active-alerts">--</strong><small>Requerem atenção</small></article>
       </section>
 
+      <section class="panel vpn-lab-panel" aria-labelledby="vpn-lab-title">
+        <div class="panel-header">
+          <div><h2 id="vpn-lab-title">OpenVPN local do laboratório</h2><p>Estado e sessões observados diretamente no servidor de teste.</p></div>
+          <span id="vpn-lab-updated" class="location-updated">Aguardando coleta</span>
+        </div>
+        <p id="vpn-lab-status" class="vpn-lab-status" role="status" aria-live="polite">Carregando status do laboratório...</p>
+        <div class="table-wrap" role="region" aria-label="Sessões observadas no OpenVPN local" tabindex="0">
+          <table>
+            <caption class="visually-hidden">Sessões atuais e históricas coletadas pelo laboratório OpenVPN local</caption>
+            <thead><tr><th scope="col">Cliente</th><th scope="col">Endereço de origem</th><th scope="col">IP VPN</th><th scope="col">Conectada em</th><th scope="col">Recebido pelo servidor / enviado</th><th scope="col">Estado</th></tr></thead>
+            <tbody data-vpn-lab-sessions><tr><td colspan="6">Carregando sessões...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
       <section class="two-columns">
         <article class="panel">
           <div class="panel-header"><div><h2 id="dashboard-protocol-title">Conexões por protocolo</h2><p>Distribuição das sessões cadastradas.</p></div></div>

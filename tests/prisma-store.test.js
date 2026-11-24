@@ -79,6 +79,37 @@ test("Prisma store applies migrations, seeds data, and enforces persistence cons
   assert.equal(connection.user, user.name);
   assert.equal((await store.findById("connections", connection.id)).serverId, server.id);
 
+  const connectedAt = new Date("2026-11-24T18:52:25.000Z");
+  const firstObservation = new Date("2026-11-24T18:53:00.000Z");
+  const sourceSession = {
+    sourceSessionId: "0:0:1795546345:gem-access-demo",
+    commonName: "gem-access-demo",
+    realAddress: "192.168.56.1:40075",
+    vpnAddress: "10.77.0.2",
+    connectedAt,
+    bytesReceived: 6416n,
+    bytesSent: 4401n
+  };
+  const activeSessions = await store.syncVpnSessions([sourceSession], firstObservation);
+  assert.equal(activeSessions[0].commonName, "gem-access-demo");
+  assert.equal(activeSessions[0].connectedAt, connectedAt.toISOString());
+  assert.equal(activeSessions[0].bytesReceived, "6416");
+  assert.equal(activeSessions[0].disconnectedAt, null);
+
+  const nextObservation = new Date("2026-11-24T18:54:00.000Z");
+  const updatedSessions = await store.syncVpnSessions([
+    { ...sourceSession, bytesReceived: 9000n, bytesSent: 6000n }
+  ], nextObservation);
+  assert.equal(updatedSessions.length, 1);
+  assert.equal(updatedSessions[0].bytesReceived, "9000");
+  assert.equal(updatedSessions[0].lastSeenAt, nextObservation.toISOString());
+
+  const disconnectedAt = new Date("2026-11-24T18:55:00.000Z");
+  const history = await store.syncVpnSessions([], disconnectedAt);
+  assert.equal(history.length, 1);
+  assert.equal(history[0].disconnectedAt, disconnectedAt.toISOString());
+  assert.equal(history[0].bytesSent, "6000");
+
   const updated = await store.update("connections", connection.id, { status: "alert" });
   assert.equal(updated.status, "alert");
   const replaced = await store.update("connections", connection.id, {

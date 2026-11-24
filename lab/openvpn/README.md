@@ -10,7 +10,8 @@ Este laboratório prepara uma instância descartável de OpenVPN em uma VM do Vi
 - O computador hospedeiro atua como cliente e precisa ter o cliente OpenVPN instalado.
 - O provisionamento cria uma CA e chaves de demonstração dentro da VM. Não reutilize essas chaves fora deste laboratório.
 - O perfil exportado contém uma chave privada. Ele fica em `data/openvpn-lab-client.ovpn`, é ignorado pelo Git e deve permanecer apenas no computador local.
-- A API do GEM Access ainda não recebe dados deste laboratório. Integração, histórico, alertas e coleta permanecem etapas futuras.
+- Com `GEM_ACCESS_OPENVPN_LAB_ENABLED=true`, a API local consulta o status versionado via SSH do Vagrant, guarda snapshots no SQLite e exibe sessões no dashboard e em Conexões.
+- A coleta do laboratório não é habilitada em produção nem no Docker Compose. O dashboard continua distinguindo esses registros locais dos dados demonstrativos já existentes.
 
 Não use este laboratório para tráfego real, não encaminhe portas do roteador e não reutilize certificados ou chaves em sistemas externos.
 
@@ -42,9 +43,13 @@ bash export-client.sh
 
 O hospedeiro precisa de privilégios para iniciar a interface de túnel do OpenVPN. A configuração não redireciona a rota padrão da máquina. Conecte apenas enquanto a VM estiver ativa e encerre o cliente depois do teste.
 
-## Coleta que será feita depois
+## Coleta e visualização no GEM Access
 
-O servidor grava o estado de clientes em `/var/log/openvpn/status.log` usando o formato versão 2, além de registrar eventos em `/var/log/openvpn/server.log`. Esses arquivos servirão como fonte local para projetar um coletor de sessões e contadores; nenhum coletor ou envio para a API está configurado neste primeiro passo.
+O servidor grava o estado de clientes em `/var/log/openvpn/status.log` usando o formato versão 2, além de registrar eventos em `/var/log/openvpn/server.log`. O coletor lê somente o status via SSH Vagrant, a cada cinco segundos, e persiste endereço de origem, IP VPN, horário de conexão e contadores de bytes. Sessões que desaparecem de um snapshot válido são marcadas como desconectadas.
+
+Para habilitar a coleta, configure `GEM_ACCESS_OPENVPN_LAB_ENABLED=true` no `.env` da API e reinicie-a em modo desenvolvimento. O schema requer a migration atual (`npm run db:migrate`). A API protegida serve o status em `/vpn-lab/status`; o cliente do laboratório precisa permanecer conectado para que apareça uma sessão ativa. A VM desligada deixa a coleta indisponível e não apaga o histórico salvo.
+
+Essa integração é deliberadamente específica a este laboratório e não deve ser usada em produção. Logs e endereços de rede são dados operacionais; mantenha o SQLite e o perfil do cliente apenas localmente.
 
 ## Remover o laboratório
 

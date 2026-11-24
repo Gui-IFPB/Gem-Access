@@ -6,7 +6,7 @@ GEM Access é um painel acadêmico para visualizar conexões VPN, usuários, ser
 
 ## Objetivos
 
-- Consolidar informações demonstrativas de VPN em uma interface única.
+- Consolidar informações demonstrativas e sessões de um laboratório VPN local em uma interface única.
 - Permitir autenticação e controle administrativo.
 - Disponibilizar CRUD e persistência por uma API REST.
 - Registrar consultas, alertas e indicadores em SQLite.
@@ -24,6 +24,8 @@ Administradores de redes e equipes de suporte que acompanham infraestrutura VPN.
 - Usuários e perfis.
 - Alertas com criação, edição e exclusão.
 - Relatórios com tráfego e duração.
+- Integração opcional com o status de uma instância OpenVPN local gerenciada por Vagrant.
+- Histórico persistido de sessões, horários de conexão/desconexão e contadores de bytes do laboratório.
 
 ## Requisitos
 
@@ -32,8 +34,11 @@ Administradores de redes e equipes de suporte que acompanham infraestrutura VPN.
 - Senhas devem ser armazenadas com derivação criptográfica.
 - Dados devem ser persistidos em SQLite por Prisma.
 - A interface deve ser responsiva e apresentar erros da API.
+- O estado do laboratório e seus endereços operacionais só podem ser consultados por administradores.
+- A coleta via Vagrant só é habilitada explicitamente em desenvolvimento.
 
 ## Restrições
 
-- Dados são demonstrativos.
-- Não substitui OpenVPN, WireGuard ou ferramentas de monitoramento reais.
+- Os registros legados permanecem demonstrativos; o laboratório é local e não representa dados institucionais ou de produção.
+- O coletor atual é específico ao Vagrant/OpenVPN do projeto e não substitui OpenVPN, WireGuard ou ferramentas de monitoramento reais.
+- A integração local não é habilitada pelo Docker Compose e não deve ser implantada em produção.

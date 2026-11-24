@@ -78,6 +78,10 @@ select { border:1px solid var(--border); border-radius:9px; padding:11px 13px; b
 .btn-small { padding:8px 10px; min-height:40px; font-size:12px; }
 .btn-full { width:100%; }
 .connection-editor { margin-bottom:18px; }
+.vpn-lab-panel { margin-bottom:18px; }
+.vpn-lab-status { margin:0 0 14px; color:var(--muted); font-size:13px; line-height:1.5; }
+.vpn-lab-status[data-state="active"] { color:var(--green); }
+.vpn-lab-status[data-state="unavailable"] { color:var(--red); }
 .connection-form { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
 .connection-form label { display:grid; gap:6px; color:var(--muted); font-size:13px; font-weight:600; }
 .connection-form label small { color:var(--muted); font-size:12px; font-weight:400; }

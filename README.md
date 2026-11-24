@@ -7,7 +7,7 @@
 - **Ideia & Objetivo:** criar um painel web que reúna informações de sessões VPN, usuários, tráfego, servidores e alertas.
 - **Público-Alvo:** administradores de redes e equipes de suporte que acompanham conexões VPN.
 - **Problema:** informações de sessões, tráfego e estado da rede podem estar distribuídas entre comandos de terminal, registros de serviço e ferramentas distintas, dificultando uma visão resumida.
-- **Solução & Valor:** o GEM Access organiza esses indicadores em dashboard, tabelas, alertas, mapa e relatórios. Nesta versão acadêmica, os dados são fictícios e não há monitoramento efetivo de uma VPN.
+- **Solução & Valor:** o GEM Access organiza esses indicadores em dashboard, tabelas, alertas, mapa e relatórios. Os dados existentes continuam demonstrativos; um laboratório OpenVPN local opcional também fornece sessões e contadores reais de teste.
 
 ## Benchmarking (Análise Comparativa)
 
@@ -20,7 +20,7 @@ Análise qualitativa de referências; não representa testes comparativos nem um
 | Webmin | Administração de servidores por interface web | É uma ferramenta geral de administração, não focada em relatórios de sessões VPN | Recorte visual centrado em sessões, tráfego e estado da VPN |
 | OpenVPN Access Server | Administração de uma infraestrutura OpenVPN | Voltado ao gerenciamento do serviço OpenVPN | O protótipo apresenta uma visão demonstrativa que também inclui registros WireGuard |
 
-O GEM Access não substitui essas ferramentas nem administra servidores VPN nesta etapa.
+O GEM Access não substitui essas ferramentas nem administra servidores VPN. A integração atual lê somente o status de uma VM local de laboratório.
 
 ## Equipe
 
@@ -59,7 +59,15 @@ Para demonstrar somente a etapa 1.1, pare o Express e execute `npm run frontend:
 
 ### Laboratório local de VPN
 
-O laboratório acadêmico gratuito de OpenVPN em VM está descrito em [lab/openvpn/README.md](lab/openvpn/README.md). Ele usa uma rede host-only e não integra nem envia dados para a API do GEM Access; não use os certificados de demonstração fora da VM.
+O laboratório acadêmico gratuito de OpenVPN em VM está descrito em [lab/openvpn/README.md](lab/openvpn/README.md). Ele usa rede host-only e certificados exclusivos para demonstração; não use-os fora da VM.
+
+Para exibir as sessões do laboratório no dashboard e em Conexões:
+
+1. Inicie a VM com `vagrant up` em `lab/openvpn` e conecte o cliente.
+2. Aplique migrations com `npm run db:migrate`.
+3. Configure `GEM_ACCESS_OPENVPN_LAB_ENABLED=true` no `.env` e reinicie a API em desenvolvimento.
+
+O coletor consulta o status versionado do OpenVPN a cada cinco segundos usando o SSH gerenciado pelo Vagrant. O endpoint autenticado `/vpn-lab/status` alimenta as telas e preserva o histórico de sessões e contadores no SQLite. Essa integração é específica ao laboratório local, não é uma configuração de produção, não coleta dados enquanto a VM está desligada e não é habilitada pelo Docker Compose.
 
 ### Execução com Docker
 

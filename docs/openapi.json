@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "GEM Access API",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "description": "API REST para autenticação e monitoramento de conexões VPN.",
     "contact": {
       "name": "GEM Access"
@@ -20,7 +20,8 @@
     { "name": "Servidores", "description": "Servidores VPN disponíveis." },
     { "name": "Usuários", "description": "Usuários cadastrados no sistema." },
     { "name": "Alertas", "description": "Alertas de segurança e operação." },
-    { "name": "Rede", "description": "Componentes da infraestrutura de rede." }
+    { "name": "Rede", "description": "Componentes da infraestrutura de rede." },
+    { "name": "VPN local", "description": "Estado e sessões observados no laboratório OpenVPN local." }
   ],
   "components": {
     "securitySchemes": {
@@ -200,6 +201,33 @@
           "status": { "type": "string", "enum": ["online", "warning", "offline"] }
         },
         "additionalProperties": false
+      },
+      "VpnLabSession": {
+        "type": "object",
+        "required": ["sourceSessionId", "source", "commonName", "realAddress", "vpnAddress", "connectedAt", "lastSeenAt", "disconnectedAt", "bytesReceived", "bytesSent"],
+        "properties": {
+          "sourceSessionId": { "type": "string" },
+          "source": { "type": "string", "enum": ["openvpn-lab"] },
+          "commonName": { "type": "string" },
+          "realAddress": { "type": "string" },
+          "vpnAddress": { "type": "string" },
+          "connectedAt": { "type": "string", "format": "date-time" },
+          "lastSeenAt": { "type": "string", "format": "date-time" },
+          "disconnectedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "bytesReceived": { "type": "string", "pattern": "^\\d+$" },
+          "bytesSent": { "type": "string", "pattern": "^\\d+$" }
+        }
+      },
+      "VpnLabStatus": {
+        "type": "object",
+        "required": ["enabled", "status", "lastPollAt", "message", "sessions"],
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "status": { "type": "string", "enum": ["disabled", "unavailable", "idle", "active"] },
+          "lastPollAt": { "type": "string", "format": "date-time", "nullable": true },
+          "message": { "type": "string", "nullable": true },
+          "sessions": { "type": "array", "items": { "$ref": "#/components/schemas/VpnLabSession" } }
+        }
       }
     },
     "parameters": {
@@ -252,6 +280,47 @@
                 "example": { "status": "ok" }
               }
             }
+          }
+        }
+      }
+    },
+    "/vpn-lab/status": {
+      "get": {
+        "tags": ["VPN local"],
+        "summary": "Consultar estado e histórico recente do laboratório OpenVPN",
+        "description": "Retorna sessões coletadas do status OpenVPN local. Requer JWT válido; os endereços e contadores são dados do laboratório.",
+        "responses": {
+          "200": {
+            "description": "Estado atual do coletor e até 50 sessões recentes.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VpnLabStatus" },
+                "example": {
+                  "enabled": true,
+                  "status": "active",
+                  "lastPollAt": "2026-11-24T18:53:46.000Z",
+                  "message": null,
+                  "sessions": [{
+                    "sourceSessionId": "0:0:1795546345:gem-access-demo",
+                    "source": "openvpn-lab",
+                    "commonName": "gem-access-demo",
+                    "realAddress": "192.168.56.1:40075",
+                    "vpnAddress": "10.77.0.2",
+                    "connectedAt": "2026-11-24T18:52:25.000Z",
+                    "lastSeenAt": "2026-11-24T18:53:46.000Z",
+                    "disconnectedAt": null,
+                    "bytesReceived": "6416",
+                    "bytesSent": "4401"
+                  }]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": {
+            "description": "Falha ao consultar o histórico persistido.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
           }
         }
       }

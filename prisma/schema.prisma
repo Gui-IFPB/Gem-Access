@@ -79,3 +79,21 @@ model RevokedToken {
 
   @@map("revoked_tokens")
 }
+
+model VpnSession {
+  id              Int       @id @default(autoincrement())
+  sourceSessionId String    @unique
+  source          String    @default("openvpn-lab")
+  commonName      String
+  realAddress     String
+  vpnAddress      String
+  connectedAt     DateTime
+  lastSeenAt      DateTime
+  disconnectedAt  DateTime?
+  bytesReceived   BigInt    @default(0)
+  bytesSent       BigInt    @default(0)
+
+  @@index([source, disconnectedAt])
+  @@index([connectedAt])
+  @@map("vpn_sessions")
+}

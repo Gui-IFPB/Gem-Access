@@ -7,6 +7,7 @@ import { createResourceRouter } from "./routes/resourceRoutes.js";
 import { createAuthRoutes } from "./routes/authRoutes.js";
 import { createJsonStore } from "./models/jsonStore.js";
 import { createPrismaStore } from "./models/prismaStore.js";
+import { asyncHandler } from "./middleware/asyncHandler.js";
 
 export const resources = ["connections", "servers", "users", "alerts", "network"];
 
@@ -35,7 +36,7 @@ function configureCors(request, response, next) {
   return next();
 }
 
-export function createApp({ store = createPrismaStore(), auth = {} } = {}) {
+export function createApp({ store = createPrismaStore(), auth = {}, vpnLabCollector = null } = {}) {
   const app = express();
   const authRoutes = createAuthRoutes({ ...auth, store });
   const authLimiter = rateLimit({
@@ -61,6 +62,30 @@ export function createApp({ store = createPrismaStore(), auth = {} } = {}) {
   app.use(configureCors);
   app.use(express.json({ limit: "100kb" }));
   app.get("/health", (_request, response) => response.json({ status: "ok" }));
+  app.get(
+    "/vpn-lab/status",
+    authRoutes.authenticate,
+    authRoutes.requireRole("Administrador"),
+    asyncHandler(async (_request, response) => {
+      const collectorStatus = vpnLabCollector?.getStatus() ?? {
+        enabled: false,
+        status: "disabled",
+        lastPollAt: null
+      };
+      const sessions = typeof store.listVpnSessions === "function"
+        ? await store.listVpnSessions(50)
+        : [];
+      response.json({
+        ...collectorStatus,
+        message: collectorStatus.status === "unavailable"
+          ? "Não foi possível consultar o OpenVPN local. Verifique se a VM está ativa."
+          : collectorStatus.status === "disabled"
+            ? "Coleta local desativada. Habilite GEM_ACCESS_OPENVPN_LAB_ENABLED para iniciar."
+            : null,
+        sessions
+      });
+    })
+  );
   app.use("/docs", express.static(resolve(process.cwd(), "docs")));
   app.use("/auth/login", authLimiter);
   app.use("/auth/register", authLimiter);
