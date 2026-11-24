@@ -18,17 +18,17 @@
 
     <form class="login-form">
       <label for="name" hidden>Nome</label>
-      <input id="name" type="text" autocomplete="name" maxlength="120" placeholder="Seu nome" hidden>
+      <input id="name" name="name" type="text" autocomplete="name" maxlength="120" placeholder="Seu nome" hidden>
 
       <label for="email">E-mail</label>
-      <input id="email" type="email" placeholder="admin@gemaccess.local" required>
+      <input id="email" name="email" type="email" autocomplete="username" placeholder="Seu e-mail" required>
 
       <label for="password">Senha</label>
-      <input id="password" type="password" placeholder="••••••••" minlength="10" maxlength="128" required>
+      <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Sua senha" minlength="10" maxlength="128" required>
 
       <button type="submit" class="btn btn-primary btn-full">Entrar</button>
       <button id="auth-mode-toggle" type="button" class="btn btn-secondary btn-full">Criar conta</button>
-      <p id="login-message" class="form-message" role="alert" aria-live="polite"></p>
+      <p id="login-message" class="form-message" role="status" aria-live="polite"></p>
     </form>
 
     <p class="demo-note">Acesso de demonstração: admin@gemaccess.local / gemaccess123</p>

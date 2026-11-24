@@ -1,5 +1,7 @@
 node_modules/
 data/*.sqlite*
+data/openvpn-lab-client.ovpn
 .env
 .env.*
 !.env.example
+.vagrant/

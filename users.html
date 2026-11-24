@@ -4,12 +4,13 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GEM Access | Usuários</title><link rel="stylesheet" href="css/style.css">
 </head>
-<body data-page="users"><div class="app">
-  <aside class="sidebar"><a class="brand" href="dashboard.html"><img class="brand-logo" src="assets/logo.png" alt="Logo GEM Access"><div><strong>GEM Access</strong><span>VPN Monitoring</span></div></a>
-  <nav><a href="dashboard.html">Dashboard</a><a href="connections.html">Conexões</a><a href="locations.html">Localização</a><a class="active" href="users.html">Usuários</a><a href="alerts.html">Alertas <span class="badge" id="alerts-badge">0</span></a><a href="reports.html">Relatórios</a></nav>
-  <div class="sidebar-bottom"><a href="#">Configurações</a><a href="index.html">Sair</a></div></aside>
-  <main class="content"><header class="topbar"><div><p class="eyebrow">ADMINISTRAÇÃO</p><h1>Usuários</h1><p class="subtitle">Usuários cadastrados na plataforma.</p></div><div class="user-chip"><span class="status-dot"></span> Administrador</div></header>
-  <section class="panel"><div class="toolbar"><input id="user-search" class="search" type="text" placeholder="Pesquisar usuário..."></div>
-  <div class="table-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Última conexão</th><th>Status</th></tr></thead><tbody id="users-table"><tr><td colspan="5">Carregando usuários...</td></tr></tbody></table></div></section></main></div>
+<body data-page="users"><a class="skip-link" href="#main-content">Pular para o conteúdo principal</a><div class="app">
+  <aside class="sidebar" aria-label="Navegação principal"><a class="brand" href="dashboard.html"><img class="brand-logo" src="assets/logo.png" alt="Logo GEM Access"><div><strong>GEM Access</strong><span>VPN Monitoring</span></div></a>
+  <nav aria-label="Seções da aplicação"><a href="dashboard.html">Dashboard</a><a href="connections.html">Conexões</a><a href="locations.html">Localização</a><a class="active" href="users.html" aria-current="page">Usuários</a><a href="alerts.html">Alertas <span class="badge" id="alerts-badge">0</span></a><a href="reports.html">Relatórios</a></nav>
+  <div class="sidebar-bottom"><span class="disabled-link">Configurações (em breve)</span><a href="index.html">Sair</a></div></aside>
+  <main class="content" id="main-content" tabindex="-1"><header class="topbar"><div><p class="eyebrow">ADMINISTRAÇÃO</p><h1>Usuários</h1><p class="subtitle">Usuários cadastrados na plataforma.</p></div><div class="user-chip"><span class="status-dot"></span> Administrador</div></header>
+  <section class="panel"><div class="toolbar"><input id="user-search" class="search" type="text" placeholder="Pesquisar usuário..." aria-label="Pesquisar usuários por nome, e-mail ou perfil"></div>
+  <p id="user-search-results" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></p>
+  <div class="table-wrap" role="region" aria-label="Tabela de usuários" tabindex="0"><table><caption class="visually-hidden">Usuários cadastrados com perfil, última conexão e status</caption><thead><tr><th scope="col">Nome</th><th scope="col">E-mail</th><th scope="col">Perfil</th><th scope="col">Última conexão</th><th scope="col">Status</th></tr></thead><tbody id="users-table"><tr><td colspan="5">Carregando usuários...</td></tr></tbody></table></div></section></main></div>
   <script type="module" src="assets/js/app.js"></script>
 </body></html>

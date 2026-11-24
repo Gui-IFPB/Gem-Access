@@ -57,6 +57,10 @@ O GEM Access não substitui essas ferramentas nem administra servidores VPN nest
 
 Para demonstrar somente a etapa 1.1, pare o Express e execute `npm run frontend:json-server`. Os dois servidores não podem ocupar a mesma porta ao mesmo tempo.
 
+### Laboratório local de VPN
+
+O laboratório acadêmico gratuito de OpenVPN em VM está descrito em [lab/openvpn/README.md](lab/openvpn/README.md). Ele usa uma rede host-only e não integra nem envia dados para a API do GEM Access; não use os certificados de demonstração fora da VM.
+
 ### Execução com Docker
 
 1. Gere um segredo seguro e exporte as variáveis:

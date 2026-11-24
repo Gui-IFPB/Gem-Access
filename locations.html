@@ -8,27 +8,28 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body data-page="locations">
+  <a class="skip-link" href="#main-content">Pular para o conteúdo principal</a>
   <div class="app">
-    <aside class="sidebar">
+    <aside class="sidebar" aria-label="Navegação principal">
       <a class="brand" href="dashboard.html">
         <img class="brand-logo" src="assets/logo.png" alt="Logo GEM Access">
         <div><strong>GEM Access</strong><span>VPN Monitoring</span></div>
       </a>
-      <nav>
+      <nav aria-label="Seções da aplicação">
         <a href="dashboard.html">Dashboard</a>
         <a href="connections.html">Conexões</a>
-        <a class="active" href="locations.html">Localização</a>
+        <a class="active" href="locations.html" aria-current="page">Localização</a>
         <a href="users.html">Usuários</a>
         <a href="alerts.html">Alertas <span class="badge" id="alerts-badge">0</span></a>
         <a href="reports.html">Relatórios</a>
       </nav>
       <div class="sidebar-bottom">
-        <a href="#">Configurações</a>
+        <span class="disabled-link">Configurações (em breve)</span>
         <a href="index.html">Sair</a>
       </div>
     </aside>
 
-    <main class="content">
+    <main class="content" id="main-content" tabindex="-1">
       <header class="topbar">
         <div>
           <p class="eyebrow">MONITORAMENTO</p>
@@ -45,12 +46,12 @@
             <span class="location-updated" id="location-updated">Aguardando dados</span>
           </div>
           <div class="map-legend">
-            <span><i class="legend-dot user-legend"></i> Origem do usuário</span>
-            <span><i class="legend-dot server-legend"></i> Servidor VPN</span>
-            <span><i class="legend-line"></i> Rota da conexão</span>
+            <span><i class="legend-dot user-legend" aria-hidden="true"></i> Origem do usuário</span>
+            <span><i class="legend-dot server-legend" aria-hidden="true"></i> Servidor VPN</span>
+            <span><i class="legend-line" aria-hidden="true"></i> Rota da conexão</span>
           </div>
-          <div id="location-map" class="location-map" aria-label="Mapa mundial com as origens das conexões e os servidores VPN"></div>
-          <p class="location-note" id="location-map-status">Carregando mapa e conexões...</p>
+          <div id="location-map" class="location-map" role="region" aria-label="Mapa mundial com as origens aproximadas das conexões e os servidores VPN" aria-describedby="location-map-status"></div>
+          <p class="location-note" id="location-map-status" role="status" aria-live="polite">Carregando mapa e conexões...</p>
         </article>
 
         <aside class="panel location-sessions-panel">

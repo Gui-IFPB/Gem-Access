@@ -10,10 +10,11 @@
 </head>
 
 <body data-page="connections">
+  <a class="skip-link" href="#main-content">Pular para o conteúdo principal</a>
 
   <div class="app">
 
-    <aside class="sidebar">
+    <aside class="sidebar" aria-label="Navegação principal">
 
       <a class="brand" href="dashboard.html">
         <img
@@ -28,12 +29,12 @@
         </div>
       </a>
 
-      <nav>
+      <nav aria-label="Seções da aplicação">
         <a href="dashboard.html">
           Dashboard
         </a>
 
-        <a class="active" href="connections.html">
+        <a class="active" href="connections.html" aria-current="page">
           Conexões
         </a>
 
@@ -56,9 +57,7 @@
       </nav>
 
       <div class="sidebar-bottom">
-        <a href="#">
-          Configurações
-        </a>
+        <span class="disabled-link">Configurações (em breve)</span>
 
         <a href="index.html">
           Sair
@@ -68,7 +67,7 @@
     </aside>
 
 
-    <main class="content">
+    <main class="content" id="main-content" tabindex="-1">
 
       <header class="topbar">
 
@@ -113,8 +112,8 @@
               <option>WireGuard</option>
             </select>
           </label>
-          <label>Duração (HH:MM:SS)<input id="connection-duration" name="duration" placeholder="00:30:00" required></label>
-          <label>Tráfego<input id="connection-traffic" name="traffic" placeholder="100 MB" required></label>
+          <label>Duração (HH:MM:SS)<input id="connection-duration" name="duration" inputmode="numeric" aria-describedby="connection-duration-help" placeholder="00:30:00" required><small id="connection-duration-help">Informe horas, minutos e segundos.</small></label>
+          <label>Tráfego<input id="connection-traffic" name="traffic" aria-describedby="connection-traffic-help" placeholder="100 MB" required><small id="connection-traffic-help">Exemplo: 100 MB.</small></label>
           <label>Status
             <select id="connection-status" name="status" required>
               <option value="active">Ativo</option>
@@ -139,7 +138,7 @@
             class="search"
             type="text"
             placeholder="Pesquisar usuário ou IP..."
-            aria-label="Pesquisar usuário ou IP"
+            aria-label="Pesquisar conexões por usuário ou IP"
           >
 
           <select id="status-filter" aria-label="Filtrar conexões por status">
@@ -163,27 +162,28 @@
           </select>
 
         </div>
+        <p id="connection-search-results" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></p>
 
 
-        <div class="table-wrap">
+        <div class="table-wrap" role="region" aria-label="Tabela de conexões VPN" tabindex="0">
 
           <table>
 
+            <caption class="visually-hidden">Conexões VPN cadastradas, com filtros por texto e status</caption>
             <thead>
 
               <tr>
-                <th>Usuário</th>
-                <th>IP de origem</th>
-                <th>IP VPN</th>
-                <th>Protocolo</th>
-                <th>Duração</th>
-                <th>Tráfego</th>
-                <th>Status</th>
-                <th>Ações</th>
+                <th scope="col">Usuário</th>
+                <th scope="col">IP de origem</th>
+                <th scope="col">IP VPN</th>
+                <th scope="col">Protocolo</th>
+                <th scope="col">Duração</th>
+                <th scope="col">Tráfego</th>
+                <th scope="col">Status</th>
+                <th scope="col">Ações</th>
               </tr>
 
             </thead>
-
             <tbody id="connections-table">
 
               <tr>

@@ -4,6 +4,11 @@ import { escapeHtml, showTableMessage } from './utils.js';
 
 const page = document.body?.dataset?.page;
 
+function scrollToForm(form) {
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  form.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+}
+
 function applyAdministratorUi() {
   if (isAdministrator()) return;
   document.querySelectorAll(".alert-form, #connection-form").forEach((form) => {
@@ -190,7 +195,7 @@ function initAlertsPage() {
       document.getElementById("alert-form-title").textContent = "Editar alerta";
       document.getElementById("alert-submit").textContent = "Salvar alterações";
       setMessage("");
-      form.scrollIntoView({ behavior: "smooth", block: "start" });
+      scrollToForm(form);
       return;
     }
 
@@ -216,6 +221,7 @@ function initConnectionsPage() {
   const form = document.getElementById("connection-form");
   const message = document.getElementById("connection-message");
   const submit = document.getElementById("connection-submit");
+  const results = document.getElementById("connection-search-results");
 
   if (!table || !field || !statusFilter || !form || !message) return;
 
@@ -246,6 +252,10 @@ function initConnectionsPage() {
       return matchesSearch && matchesStatus;
     });
 
+    if (results) {
+      results.textContent = `${filteredConnections.length} ${filteredConnections.length === 1 ? "conexão encontrada" : "conexões encontradas"}.`;
+    }
+
     if (!filteredConnections.length) {
       showTableMessage(table, "Nenhuma conexão encontrada.", 8);
       return;
@@ -263,8 +273,8 @@ function initConnectionsPage() {
         <td>${escapeHtml(connection.traffic || "--")}</td>
         <td>${connection.status === "active" ? '<span class="tag success">Ativo</span>' : connection.status === "alert" ? '<span class="tag warning">Alerta</span>' : '<span class="tag neutral">Offline</span>'}</td>
         <td class="row-actions">
-          <button type="button" class="btn btn-small" data-action="edit" data-id="${escapeHtml(String(connection.id))}">Editar</button>
-          <button type="button" class="btn btn-small btn-danger" data-action="delete" data-id="${escapeHtml(String(connection.id))}">Excluir</button>
+          <button type="button" class="btn btn-small" data-action="edit" data-id="${escapeHtml(String(connection.id))}" aria-label="Editar conexão de ${escapeHtml(connection.user || "usuário")}">Editar</button>
+          <button type="button" class="btn btn-small btn-danger" data-action="delete" data-id="${escapeHtml(String(connection.id))}" aria-label="Excluir conexão de ${escapeHtml(connection.user || "usuário")}">Excluir</button>
         </td>
       `;
       table.appendChild(row);
@@ -329,7 +339,7 @@ function initConnectionsPage() {
       document.getElementById("connection-form-title").textContent = "Editar conexão";
       document.getElementById("connection-submit").textContent = "Salvar alterações";
       setMessage("");
-      form.scrollIntoView({ behavior: "smooth", block: "start" });
+      scrollToForm(form);
       return;
     }
 
@@ -374,19 +384,27 @@ function initLoginForm() {
   }
 
   const name = document.getElementById("name");
+  const nameLabel = document.querySelector('label[for="name"]');
+  const email = document.getElementById("email");
   const modeToggle = document.getElementById("auth-mode-toggle");
   const submit = form.querySelector('button[type="submit"]');
   const setMode = (mode) => {
     const isRegister = mode === "register";
     form.dataset.mode = mode;
+    nameLabel.hidden = !isRegister;
     name.hidden = !isRegister;
     name.required = isRegister;
+    email.autocomplete = isRegister ? "email" : "username";
     document.getElementById("password").autocomplete = isRegister ? "new-password" : "current-password";
     submit.textContent = isRegister ? "Criar conta" : "Entrar";
     modeToggle.textContent = isRegister ? "Já tenho uma conta" : "Criar conta";
     document.getElementById("login-message").textContent = "";
   };
-  modeToggle.addEventListener("click", () => setMode(form.dataset.mode === "register" ? "login" : "register"));
+  modeToggle.addEventListener("click", () => {
+    const mode = form.dataset.mode === "register" ? "login" : "register";
+    setMode(mode);
+    (mode === "register" ? name : email).focus();
+  });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();

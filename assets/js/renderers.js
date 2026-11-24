@@ -34,13 +34,17 @@ export function renderBreakdown(items, key, chart, labels, valueForItem) {
 
   if (!entries.length) {
     chart.innerHTML = "<p>Nenhum dado disponível.</p>";
+    chart.setAttribute("role", "img");
+    chart.setAttribute("aria-label", "Nenhum dado disponível.");
     labels.replaceChildren();
     return;
   }
 
+  chart.setAttribute("role", "img");
+  chart.setAttribute("aria-label", `Distribuição: ${entries.map(([label, value]) => `${label}: ${value}`).join("; ")}.`);
   const maximum = Math.max(...entries.map(([, value]) => value), 1);
   chart.innerHTML = entries.map(([label, value]) =>
-    `<i title="${escapeHtml(label)}: ${escapeHtml(value)}" style="height:${Math.max(8, (value / maximum) * 100)}%"></i>`
+    `<i aria-hidden="true" title="${escapeHtml(label)}: ${escapeHtml(value)}" style="height:${Math.max(8, (value / maximum) * 100)}%"></i>`
   ).join("");
   labels.innerHTML = entries.map(([label]) => `<span>${escapeHtml(label)}</span>`).join("");
 }
@@ -80,11 +84,16 @@ export function renderDashboard({ connections, alerts, network }) {
 export function renderUsers({ users, connections }) {
   const table = document.getElementById("users-table");
   const search = document.getElementById("user-search");
+  const results = document.getElementById("user-search-results");
 
   const render = () => {
     const query = search.value.trim().toLocaleLowerCase("pt-BR");
     const filteredUsers = users.filter((user) => [user.name, user.email, user.role]
       .some((value) => String(value || "").toLocaleLowerCase("pt-BR").includes(query)));
+
+    if (results) {
+      results.textContent = `${filteredUsers.length} ${filteredUsers.length === 1 ? "usuário encontrado" : "usuários encontrados"}.`;
+    }
 
     if (!filteredUsers.length) {
       showTableMessage(table, "Nenhum usuário encontrado.", 5);
@@ -98,7 +107,7 @@ export function renderUsers({ users, connections }) {
   };
 
   if (search) {
-    search.addEventListener("input", render);
+    search.oninput = render;
   }
 
   render();
@@ -114,7 +123,7 @@ export function renderAlerts(alerts) {
   list.innerHTML = alerts.slice().reverse().map((alert) => {
     const severity = ["critical", "high", "medium"].includes(alert.severity) ? alert.severity : "medium";
     const labels = { critical: "CRÍTICO", high: "ALTO", medium: "MÉDIO" };
-    return `<article class="alert-card ${severity}"><div class="alert-icon">!</div><div><span class="alert-level">${labels[severity]}</span><h2>${escapeHtml(alert.title)}</h2><p>${escapeHtml(alert.description)}</p><small>${escapeHtml(alert.time || "")}</small> ${alert.status === "active" ? "" : statusTag("resolved")}<div class="row-actions"><button type="button" class="btn btn-small" data-alert-action="edit" data-id="${escapeHtml(String(alert.id))}">Editar</button><button type="button" class="btn btn-small btn-danger" data-alert-action="delete" data-id="${escapeHtml(String(alert.id))}">Excluir</button></div></div></article>`;
+    return `<article class="alert-card ${severity}"><div class="alert-icon" aria-hidden="true">!</div><div><span class="alert-level">${labels[severity]}</span><h2>${escapeHtml(alert.title)}</h2><p>${escapeHtml(alert.description)}</p><small>${escapeHtml(alert.time || "")}</small> ${alert.status === "active" ? "" : statusTag("resolved")}<div class="row-actions"><button type="button" class="btn btn-small" data-alert-action="edit" data-id="${escapeHtml(String(alert.id))}" aria-label="Editar alerta: ${escapeHtml(alert.title)}">Editar</button><button type="button" class="btn btn-small btn-danger" data-alert-action="delete" data-id="${escapeHtml(String(alert.id))}" aria-label="Excluir alerta: ${escapeHtml(alert.title)}">Excluir</button></div></div></article>`;
   }).join("");
 }
 
@@ -163,6 +172,20 @@ export function renderLocations({ connections, servers }) {
 
   if (activeCount) activeCount.textContent = activeConnections.length;
 
+  const hasCoordinates = (location) => Number.isFinite(Number(location?.latitude)) && Number.isFinite(Number(location?.longitude));
+
+  if (sessionList) {
+    sessionList.innerHTML = activeConnections.length
+      ? activeConnections.map((connection) => {
+          const origin = connection.sourceLocation;
+          const server = serverById.get(String(connection.serverId));
+          const originLabel = origin?.city && origin?.country ? `${escapeHtml(origin.city)}, ${escapeHtml(origin.country)}` : "Localização indisponível";
+          const serverLabel = server?.city && server?.country ? `${escapeHtml(server.city)}, ${escapeHtml(server.country)}` : "Servidor sem localização cadastrada";
+          return `<li><strong>${escapeHtml(connection.user)}</strong><span>Origem: ${originLabel}</span><span>Servidor: ${serverLabel}</span></li>`;
+        }).join("")
+      : "<li class=\"location-empty\">Nenhuma sessão VPN ativa.</li>";
+  }
+
   if (!window.L) {
     if (mapStatus) mapStatus.textContent = "Não foi possível carregar o mapa. Verifique sua conexão.";
     return;
@@ -181,58 +204,50 @@ export function renderLocations({ connections, servers }) {
   const plottedLocations = [];
   const pointIcon = (kind) => L.divIcon({
     className: "location-marker-wrap",
-    html: `<span class="location-marker ${kind}"></span>`,
+    html: `<span class="location-marker ${kind}" aria-hidden="true"></span>`,
     iconSize: [18, 18],
     iconAnchor: [9, 9]
   });
 
-  const hasCoordinates = (location) => Number.isFinite(Number(location?.latitude)) && Number.isFinite(Number(location?.longitude));
-
   servers.forEach((server) => {
     if (!hasCoordinates(server)) return;
     const coordinates = [Number(server.latitude), Number(server.longitude)];
-    L.marker(coordinates, { icon: pointIcon("server-marker") })
+    L.marker(coordinates, { icon: pointIcon("server-marker"), title: `Servidor VPN: ${server.name}` })
       .bindPopup(`<strong>${escapeHtml(server.name)}</strong><br>${escapeHtml(server.city)}, ${escapeHtml(server.country)}<br>Servidor VPN`)
       .addTo(locationLayers);
     plottedServers.add(String(server.id));
     plottedLocations.push(coordinates);
   });
 
-  if (sessionList) {
-    sessionList.innerHTML = activeConnections.length
-      ? activeConnections.map((connection) => {
-          const origin = connection.sourceLocation;
-          const server = serverById.get(String(connection.serverId));
-          const originLabel = origin?.city && origin?.country ? `${escapeHtml(origin.city)}, ${escapeHtml(origin.country)}` : "Localização indisponível";
-          const serverLabel = server?.city && server?.country ? `${escapeHtml(server.city)}, ${escapeHtml(server.country)}` : "Servidor sem localização cadastrada";
+  activeConnections.forEach((connection) => {
+    const origin = connection.sourceLocation;
+    const server = serverById.get(String(connection.serverId));
+    const originLabel = origin?.city && origin?.country ? `${escapeHtml(origin.city)}, ${escapeHtml(origin.country)}` : "Localização indisponível";
+    const serverLabel = server?.city && server?.country ? `${escapeHtml(server.city)}, ${escapeHtml(server.country)}` : "Servidor sem localização cadastrada";
 
-          if (hasCoordinates(origin)) {
-            const originCoordinates = [Number(origin.latitude), Number(origin.longitude)];
-            L.marker(originCoordinates, { icon: pointIcon("user-marker") })
-              .bindPopup(`<strong>${escapeHtml(connection.user)}</strong><br>${originLabel}<br>IP de origem: ${escapeHtml(connection.sourceIp)}`)
-              .addTo(locationLayers);
-            plottedLocations.push(originCoordinates);
-            if (server && hasCoordinates(server)) {
-              L.polyline([originCoordinates, [Number(server.latitude), Number(server.longitude)]], {
-                color: "#287a62",
-                weight: 2,
-                opacity: 0.65,
-                dashArray: "5 7"
-              }).addTo(locationLayers);
-            }
-          }
+    if (hasCoordinates(origin)) {
+      const originCoordinates = [Number(origin.latitude), Number(origin.longitude)];
+      L.marker(originCoordinates, { icon: pointIcon("user-marker"), title: `Origem da sessão: ${connection.user}` })
+        .bindPopup(`<strong>${escapeHtml(connection.user)}</strong><br>${originLabel}<br>IP de origem: ${escapeHtml(connection.sourceIp)}`)
+        .addTo(locationLayers);
+      plottedLocations.push(originCoordinates);
+      if (server && hasCoordinates(server)) {
+        L.polyline([originCoordinates, [Number(server.latitude), Number(server.longitude)]], {
+          color: "#287a62",
+          weight: 2,
+          opacity: 0.65,
+          dashArray: "5 7"
+        }).addTo(locationLayers);
+      }
+    }
 
-          if (server && !plottedServers.has(String(server.id)) && hasCoordinates(server)) {
-            L.marker([Number(server.latitude), Number(server.longitude)], { icon: pointIcon("server-marker") })
-              .bindPopup(`<strong>${escapeHtml(server.name)}</strong><br>${serverLabel}<br>Servidor VPN`)
-              .addTo(locationLayers);
-            plottedServers.add(String(server.id));
-          }
-
-          return `<li><strong>${escapeHtml(connection.user)}</strong><span>Origem: ${originLabel}</span><span>Servidor: ${serverLabel}</span></li>`;
-        }).join("")
-      : "<li class=\"location-empty\">Nenhuma sessão VPN ativa.</li>";
-  }
+    if (server && !plottedServers.has(String(server.id)) && hasCoordinates(server)) {
+      L.marker([Number(server.latitude), Number(server.longitude)], { icon: pointIcon("server-marker"), title: `Servidor VPN: ${server.name}` })
+        .bindPopup(`<strong>${escapeHtml(server.name)}</strong><br>${serverLabel}<br>Servidor VPN`)
+        .addTo(locationLayers);
+      plottedServers.add(String(server.id));
+    }
+  });
 
   if (mapStatus) mapStatus.textContent = "Dados demonstrativos. As coordenadas de origem representam uma estimativa por IP.";
   const locationUpdated = document.getElementById("location-updated");
