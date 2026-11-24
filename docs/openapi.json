@@ -2,32 +2,231 @@
   "openapi": "3.0.3",
   "info": {
     "title": "GEM Access API",
-    "version": "1.2.0",
-    "description": "API REST para monitoramento demonstrativo de conexões VPN."
+    "version": "1.3.0",
+    "description": "API REST para autenticação e monitoramento de conexões VPN.",
+    "contact": {
+      "name": "GEM Access"
+    }
   },
   "servers": [
-    { "url": "http://localhost:3000" }
+    {
+      "url": "http://localhost:3000",
+      "description": "Servidor local"
+    }
+  ],
+  "tags": [
+    { "name": "Autenticação", "description": "Registro, login e encerramento de sessões." },
+    { "name": "Conexões", "description": "Conexões VPN monitoradas." },
+    { "name": "Servidores", "description": "Servidores VPN disponíveis." },
+    { "name": "Usuários", "description": "Usuários cadastrados no sistema." },
+    { "name": "Alertas", "description": "Alertas de segurança e operação." },
+    { "name": "Rede", "description": "Componentes da infraestrutura de rede." }
   ],
   "components": {
     "securitySchemes": {
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "bearerFormat": "JWT"
+        "bearerFormat": "JWT",
+        "description": "Token JWT emitido pelos endpoints de registro ou login."
       }
     },
     "schemas": {
       "Error": {
         "type": "object",
+        "required": ["error"],
         "properties": {
           "error": {
             "type": "object",
+            "required": ["code", "message"],
             "properties": {
-              "code": { "type": "string" },
-              "message": { "type": "string" }
+              "code": { "type": "string", "example": "VALIDATION_ERROR" },
+              "message": { "type": "string", "example": "Dados inválidos." },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": { "type": "string" },
+                    "fields": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
             }
           }
         }
+      },
+      "PublicUser": {
+        "type": "object",
+        "required": ["id", "name", "email", "role"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "name": { "type": "string", "maxLength": 120 },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string", "example": "Administrador" },
+          "lastConnection": { "type": "string", "maxLength": 120 }
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "required": ["token", "user"],
+        "properties": {
+          "token": { "type": "string", "description": "JWT válido por 8 horas." },
+          "user": { "$ref": "#/components/schemas/PublicUser" }
+        }
+      },
+      "SourceLocation": {
+        "type": "object",
+        "required": ["city", "country", "latitude", "longitude"],
+        "properties": {
+          "city": { "type": "string", "maxLength": 120 },
+          "country": { "type": "string", "maxLength": 120 },
+          "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+          "longitude": { "type": "number", "minimum": -180, "maximum": 180 }
+        },
+        "additionalProperties": false
+      },
+      "Connection": {
+        "type": "object",
+        "required": ["id", "user", "vpnIp", "sourceIp", "serverId", "protocol", "duration", "status", "traffic"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "user": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "vpnIp": { "type": "string", "format": "ipv4" },
+          "sourceIp": { "type": "string", "format": "ipv4" },
+          "serverId": { "type": "integer", "minimum": 1 },
+          "sourceLocation": { "$ref": "#/components/schemas/SourceLocation" },
+          "protocol": { "type": "string", "enum": ["OpenVPN", "WireGuard"] },
+          "duration": { "type": "string", "pattern": "^\\d+:[0-5]\\d:[0-5]\\d$", "example": "02:34:12" },
+          "status": { "type": "string", "enum": ["active", "alert", "offline"] },
+          "traffic": { "type": "string", "example": "125 MB" }
+        }
+      },
+      "ConnectionInput": {
+        "type": "object",
+        "required": ["user", "vpnIp", "sourceIp", "serverId", "protocol", "duration", "status", "traffic"],
+        "properties": {
+          "user": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "vpnIp": { "type": "string" },
+          "sourceIp": { "type": "string" },
+          "serverId": { "type": "integer", "minimum": 1 },
+          "sourceLocation": { "$ref": "#/components/schemas/SourceLocation" },
+          "protocol": { "type": "string", "enum": ["OpenVPN", "WireGuard"] },
+          "duration": { "type": "string", "pattern": "^\\d+:[0-5]\\d:[0-5]\\d$" },
+          "status": { "type": "string", "enum": ["active", "alert", "offline"] },
+          "traffic": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "Server": {
+        "type": "object",
+        "required": ["id", "name", "city", "country", "status"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "name": { "type": "string", "maxLength": 200 },
+          "city": { "type": "string", "maxLength": 120 },
+          "country": { "type": "string", "maxLength": 120 },
+          "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+          "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+          "status": { "type": "string", "enum": ["online", "warning", "offline"] }
+        }
+      },
+      "ServerInput": {
+        "type": "object",
+        "required": ["name", "city", "country", "status"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "city": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "country": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+          "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+          "status": { "type": "string", "enum": ["online", "warning", "offline"] }
+        },
+        "additionalProperties": false
+      },
+      "Alert": {
+        "type": "object",
+        "required": ["id", "severity", "title", "description", "time", "status"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "severity": { "type": "string", "enum": ["critical", "high", "medium"] },
+          "title": { "type": "string", "maxLength": 160 },
+          "description": { "type": "string", "maxLength": 1000 },
+          "time": { "type": "string", "maxLength": 120 },
+          "status": { "type": "string", "enum": ["active", "resolved"] }
+        }
+      },
+      "AlertInput": {
+        "type": "object",
+        "required": ["severity", "title", "description", "time", "status"],
+        "properties": {
+          "severity": { "type": "string", "enum": ["critical", "high", "medium"] },
+          "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "description": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "time": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "status": { "type": "string", "enum": ["active", "resolved"] }
+        },
+        "additionalProperties": false
+      },
+      "UserInput": {
+        "type": "object",
+        "required": ["name", "email", "role"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "lastConnection": { "type": "string", "maxLength": 120 }
+        },
+        "additionalProperties": false
+      },
+      "Network": {
+        "type": "object",
+        "required": ["id", "name", "status"],
+        "properties": {
+          "id": { "type": "integer", "minimum": 1 },
+          "name": { "type": "string", "maxLength": 160 },
+          "status": { "type": "string", "enum": ["online", "warning", "offline"] }
+        }
+      },
+      "NetworkInput": {
+        "type": "object",
+        "required": ["name", "status"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "status": { "type": "string", "enum": ["online", "warning", "offline"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "parameters": {
+      "ResourceId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Identificador inteiro do registro.",
+        "schema": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Token ausente, expirado, revogado ou inválido.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "Forbidden": {
+        "description": "O usuário autenticado não possui o perfil Administrador.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "NotFound": {
+        "description": "Registro não encontrado.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "ValidationError": {
+        "description": "Corpo da requisição inválido.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
       }
     }
   },
@@ -37,13 +236,19 @@
   "paths": {
     "/health": {
       "get": {
+        "tags": ["Autenticação"],
         "summary": "Verificar saúde da API",
         "security": [],
         "responses": {
           "200": {
-            "description": "API disponível",
+            "description": "API disponível.",
             "content": {
               "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": { "status": { "type": "string", "enum": ["ok"] } }
+                },
                 "example": { "status": "ok" }
               }
             }
@@ -53,7 +258,9 @@
     },
     "/auth/register": {
       "post": {
+        "tags": ["Autenticação"],
         "summary": "Cadastrar usuário comum",
+        "description": "Cria uma conta com perfil Usuário e retorna uma nova sessão JWT.",
         "security": [],
         "requestBody": {
           "required": true,
@@ -63,23 +270,31 @@
                 "type": "object",
                 "required": ["name", "email", "password"],
                 "properties": {
-                  "name": { "type": "string", "maxLength": 120 },
+                  "name": { "type": "string", "minLength": 1, "maxLength": 120 },
                   "email": { "type": "string", "format": "email" },
-                  "password": { "type": "string", "minLength": 10, "maxLength": 128 }
-                }
+                  "password": { "type": "string", "format": "password", "minLength": 10, "maxLength": 128 }
+                },
+                "additionalProperties": false
+              },
+              "example": {
+                "name": "Maria Silva",
+                "email": "maria@gemaccess.local",
+                "password": "senha-segura"
               }
             }
           }
         },
         "responses": {
-          "201": { "description": "Conta criada e sessão emitida" },
-          "400": { "description": "Dados inválidos", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "409": { "description": "E-mail já cadastrado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+          "201": { "description": "Conta criada e sessão emitida.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "409": { "description": "E-mail já cadastrado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Limite de tentativas excedido." }
         }
       }
     },
     "/auth/login": {
       "post": {
+        "tags": ["Autenticação"],
         "summary": "Autenticar usuário",
         "security": [],
         "requestBody": {
@@ -91,74 +306,123 @@
                 "required": ["email", "password"],
                 "properties": {
                   "email": { "type": "string", "format": "email" },
-                  "password": { "type": "string" }
-                }
+                  "password": { "type": "string", "format": "password" }
+                },
+                "additionalProperties": false
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Token JWT e usuário público" },
-          "401": { "description": "Credenciais inválidas", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+          "200": { "description": "Credenciais válidas.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } } },
+          "401": { "description": "Credenciais inválidas.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Limite de tentativas excedido." }
         }
       }
     },
     "/auth/logout": {
       "post": {
+        "tags": ["Autenticação"],
         "summary": "Revogar sessão atual",
+        "description": "Revoga o identificador do JWT enviado no cabeçalho Authorization.",
         "responses": {
-          "204": { "description": "Sessão revogada" },
-          "401": { "description": "Token ausente ou inválido", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+          "204": { "description": "Sessão revogada." },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
         }
       }
     },
     "/connections": {
       "get": {
+        "tags": ["Conexões"],
         "summary": "Listar conexões",
         "responses": {
-          "200": { "description": "Lista de conexões" },
-          "401": { "description": "Não autenticado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+          "200": { "description": "Lista de conexões.", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Connection" } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
         }
       },
       "post": {
+        "tags": ["Conexões"],
         "summary": "Criar conexão",
+        "description": "Exclusivo para usuários com perfil Administrador.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConnectionInput" } } } },
         "responses": {
-          "201": { "description": "Conexão criada" },
-          "403": { "description": "Perfil sem permissão" },
-          "400": { "description": "Dados inválidos" }
+          "201": { "description": "Conexão criada.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Connection" } } } },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
         }
       }
     },
     "/connections/{id}": {
-      "parameters": [
-        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
-      ],
-      "get": { "summary": "Consultar conexão", "responses": { "200": { "description": "Conexão encontrada" }, "404": { "description": "Não encontrada" } } },
-      "put": { "summary": "Substituir conexão", "responses": { "200": { "description": "Conexão substituída" }, "403": { "description": "Perfil sem permissão" } } },
-      "patch": { "summary": "Atualizar parcialmente conexão", "responses": { "200": { "description": "Conexão atualizada" }, "403": { "description": "Perfil sem permissão" } } },
-      "delete": { "summary": "Excluir conexão", "responses": { "204": { "description": "Excluída" }, "403": { "description": "Perfil sem permissão" } } }
-    },
-    "/alerts": {
-      "get": { "summary": "Listar alertas", "responses": { "200": { "description": "Lista de alertas" } } },
-      "post": { "summary": "Criar alerta", "responses": { "201": { "description": "Alerta criado" }, "403": { "description": "Perfil sem permissão" } } }
-    },
-    "/alerts/{id}": {
-      "parameters": [
-        { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
-      ],
-      "get": { "summary": "Consultar alerta", "responses": { "200": { "description": "Alerta encontrado" } } },
-      "put": { "summary": "Substituir alerta", "responses": { "200": { "description": "Alerta substituído" } } },
-      "patch": { "summary": "Atualizar alerta", "responses": { "200": { "description": "Alerta atualizado" } } },
-      "delete": { "summary": "Excluir alerta", "responses": { "204": { "description": "Alerta excluído" } } }
-    },
-    "/users": {
-      "get": { "summary": "Listar usuários", "responses": { "200": { "description": "Lista pública de usuários" } } }
+      "parameters": [{ "$ref": "#/components/parameters/ResourceId" }],
+      "get": {
+        "tags": ["Conexões"],
+        "summary": "Consultar conexão",
+        "responses": { "200": { "description": "Conexão encontrada.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Connection" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      },
+      "put": {
+        "tags": ["Conexões"],
+        "summary": "Substituir conexão",
+        "description": "Todos os campos obrigatórios devem ser enviados.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConnectionInput" } } } },
+        "responses": { "200": { "description": "Conexão substituída.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Connection" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      },
+      "patch": {
+        "tags": ["Conexões"],
+        "summary": "Atualizar parcialmente conexão",
+        "description": "Envie pelo menos um campo permitido.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConnectionInput" } } } },
+        "responses": { "200": { "description": "Conexão atualizada.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Connection" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      },
+      "delete": {
+        "tags": ["Conexões"],
+        "summary": "Excluir conexão",
+        "responses": { "204": { "description": "Conexão excluída." }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
     },
     "/servers": {
-      "get": { "summary": "Listar servidores", "responses": { "200": { "description": "Lista de servidores" } } }
+      "get": { "tags": ["Servidores"], "summary": "Listar servidores", "responses": { "200": { "description": "Lista de servidores.", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Server" } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Servidores"], "summary": "Criar servidor", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ServerInput" } } } }, "responses": { "201": { "description": "Servidor criado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Server" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/servers/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/ResourceId" }],
+      "get": { "tags": ["Servidores"], "summary": "Consultar servidor", "responses": { "200": { "description": "Servidor encontrado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Server" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "put": { "tags": ["Servidores"], "summary": "Substituir servidor", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ServerInput" } } } }, "responses": { "200": { "description": "Servidor substituído.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Server" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "patch": { "tags": ["Servidores"], "summary": "Atualizar parcialmente servidor", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ServerInput" } } } }, "responses": { "200": { "description": "Servidor atualizado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Server" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Servidores"], "summary": "Excluir servidor", "responses": { "204": { "description": "Servidor excluído." }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/alerts": {
+      "get": { "tags": ["Alertas"], "summary": "Listar alertas", "responses": { "200": { "description": "Lista de alertas.", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Alert" } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Alertas"], "summary": "Criar alerta", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AlertInput" } } } }, "responses": { "201": { "description": "Alerta criado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Alert" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/alerts/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/ResourceId" }],
+      "get": { "tags": ["Alertas"], "summary": "Consultar alerta", "responses": { "200": { "description": "Alerta encontrado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Alert" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "put": { "tags": ["Alertas"], "summary": "Substituir alerta", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AlertInput" } } } }, "responses": { "200": { "description": "Alerta substituído.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Alert" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "patch": { "tags": ["Alertas"], "summary": "Atualizar parcialmente alerta", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AlertInput" } } } }, "responses": { "200": { "description": "Alerta atualizado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Alert" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Alertas"], "summary": "Excluir alerta", "responses": { "204": { "description": "Alerta excluído." }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/users": {
+      "get": { "tags": ["Usuários"], "summary": "Listar usuários", "responses": { "200": { "description": "Lista pública de usuários.", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PublicUser" } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Usuários"], "summary": "Criar usuário", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserInput" } } } }, "responses": { "201": { "description": "Usuário criado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PublicUser" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/users/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/ResourceId" }],
+      "get": { "tags": ["Usuários"], "summary": "Consultar usuário", "responses": { "200": { "description": "Usuário encontrado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PublicUser" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "put": { "tags": ["Usuários"], "summary": "Substituir usuário", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserInput" } } } }, "responses": { "200": { "description": "Usuário substituído.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PublicUser" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "patch": { "tags": ["Usuários"], "summary": "Atualizar parcialmente usuário", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserInput" } } } }, "responses": { "200": { "description": "Usuário atualizado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PublicUser" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Usuários"], "summary": "Excluir usuário", "responses": { "204": { "description": "Usuário excluído." }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
     },
     "/network": {
-      "get": { "summary": "Listar componentes da rede", "responses": { "200": { "description": "Lista de componentes" } } }
+      "get": { "tags": ["Rede"], "summary": "Listar componentes da rede", "responses": { "200": { "description": "Lista de componentes.", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Network" } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Rede"], "summary": "Criar componente da rede", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NetworkInput" } } } }, "responses": { "201": { "description": "Componente criado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Network" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/network/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/ResourceId" }],
+      "get": { "tags": ["Rede"], "summary": "Consultar componente da rede", "responses": { "200": { "description": "Componente encontrado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Network" } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "put": { "tags": ["Rede"], "summary": "Substituir componente da rede", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NetworkInput" } } } }, "responses": { "200": { "description": "Componente substituído.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Network" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "patch": { "tags": ["Rede"], "summary": "Atualizar parcialmente componente da rede", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NetworkInput" } } } }, "responses": { "200": { "description": "Componente atualizado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Network" } } } }, "400": { "$ref": "#/components/responses/ValidationError" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "delete": { "tags": ["Rede"], "summary": "Excluir componente da rede", "responses": { "204": { "description": "Componente excluído." }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
     }
   }
 }
