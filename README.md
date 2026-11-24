@@ -62,7 +62,7 @@ Para demonstrar somente a etapa 1.1, pare o Express e execute `npm run frontend:
 1. Gere um segredo seguro e exporte as variáveis:
 
    ```bash
-   export GEM_ACCESS_JWT_SECRET="cole-aqui-uma-chave-aleatoria-com-mais-de-32-caracteres"
+   export GEM_ACCESS_JWT_SECRET="$(openssl rand -base64 48)"
    export GEM_ACCESS_ADMIN_EMAIL="admin@gemaccess.local"
    export GEM_ACCESS_ADMIN_PASSWORD="gemaccess123"
    docker compose up --build

@@ -5,13 +5,16 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-COPY . .
+COPY --chown=node:node . .
 
-RUN npm run db:migrate || true
+RUN npx prisma generate
+RUN mkdir -p /app/data && chown -R node:node /app/data
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
 EXPOSE 3000
+
+USER node
 
 CMD ["node", "server/index.js"]
